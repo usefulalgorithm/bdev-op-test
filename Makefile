@@ -8,4 +8,4 @@ $(TARGET): main.o
 main.o: main.cc
 	$(CC) -c main.cc
 clean:
-	rm -f $(TARGET) *.o
+	@rm -f $(TARGET) *.o
