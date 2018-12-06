@@ -28,10 +28,10 @@ int main(int argc, char* argv[]) {
   string pname = argv[0];
   // default ssd location
   int opt, ssd_fd;
-  unsigned long long base_size = 1;
+  uint64_t base_size = 1;
   string base_size_str = "B";
-  unsigned long long ssd_dev_size;
-  int ssd_sector_size;
+  uint64_t ssd_dev_size;
+  uint64_t ssd_sector_size;
   while ((opt = getopt(argc, argv, "s:GMK")) != -1) {
     switch (opt) {
       case 's':
