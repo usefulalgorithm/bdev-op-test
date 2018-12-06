@@ -17,7 +17,10 @@ char buffer[512];
 string ssd_devname("/dev/sdf2");
 
 void usage(string pname) {
-  cerr << "Usage: " << pname << endl;
+  cerr << "Usage: " << pname << " [-s SSD_LOCATION] [-K | -M | -G]" << endl;
+  cerr << "Options:" << endl;
+  cerr << "\t-s\t\tlocation of the SSD. If unspecified, the default value is " << ssd_devname << endl;
+  cerr << "\t-K | -M | -G\tset base for displaying volume size" << endl;
   exit(EXIT_FAILURE);
 }
 
@@ -25,12 +28,26 @@ int main(int argc, char* argv[]) {
   string pname = argv[0];
   // default ssd location
   int opt, ssd_fd;
-  int ssd_dev_size;
+  unsigned long long base_size = 1;
+  string base_size_str = "B";
+  unsigned long long ssd_dev_size;
   int ssd_sector_size;
-  while ((opt = getopt(argc, argv, "s:")) != -1) {
+  while ((opt = getopt(argc, argv, "s:GMK")) != -1) {
     switch (opt) {
       case 's':
         ssd_devname = optarg;
+        break;
+      case 'G':
+        base_size_str = "GB";
+        base_size = 1 << 30;
+        break;
+      case 'M':
+        base_size_str = "MB";
+        base_size = 1 << 20;
+        break;
+      case 'K':
+        base_size_str = "KB";
+        base_size = 1 << 10;
         break;
       default:
         usage(pname);
@@ -54,10 +71,7 @@ int main(int argc, char* argv[]) {
     cerr << "Cannot get SSD sector size: " << strerror(errno) << endl;
     exit(EXIT_FAILURE);
   }
-  cout << ssd_dev_size << endl;
-  cout << ssd_sector_size << endl;
-  /*
-  cout << ssd_devname << ": device size = " << ssd_dev_size << ", sector size = " << ssd_sector_size << endl;
-  */
+  cout << ssd_devname << ": device size = " << (ssd_dev_size * 512)/base_size << base_size_str
+    << ", sector size = " << ssd_sector_size << endl;
   return 0;
 }
