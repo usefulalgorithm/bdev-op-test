@@ -9,7 +9,7 @@ all: $(TARGET)
 
 .PHONY: debug
 
-debug: CCFLAGS += -DDEBUG -g -O0 -Wall
+debug: CCFLAGS += -DDEBUG -O0 -Wall
 debug: $(TARGET)
 
 $(TARGET): main.o
