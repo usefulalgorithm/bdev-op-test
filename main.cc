@@ -32,6 +32,7 @@ int main(int argc, char* argv[]) {
   string base_size_str = "B";
   uint64_t ssd_dev_size;
   uint64_t ssd_sector_size;
+  uint64_t object_size = 1024*4096;
   while ((opt = getopt(argc, argv, "s:GMK")) != -1) {
     switch (opt) {
       case 's':
@@ -71,7 +72,14 @@ int main(int argc, char* argv[]) {
     cerr << "Cannot get SSD sector size: " << strerror(errno) << endl;
     exit(EXIT_FAILURE);
   }
+  if (object_size % ssd_sector_size) {
+    cerr << "Object size " << object_size << " should be a multiple of sector size " << ssd_sector_size << endl;
+    exit(EXIT_FAILURE);
+  }
+#ifdef DEBUG
   cout << ssd_devname << ": device size = " << (ssd_dev_size * 512)/base_size << base_size_str
     << ", sector size = " << ssd_sector_size << endl;
+  cout << ssd_devname << ": " << ssd_dev_size << " sectors" << endl;
+#endif
   return 0;
 }
