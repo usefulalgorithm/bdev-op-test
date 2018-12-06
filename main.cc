@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
+#include <limits>
+#include <exception>
 #include "fcntl.h"
 #include "unistd.h"
 #include <sys/ioctl.h>
@@ -16,11 +18,14 @@ using std::endl;
 char buffer[512];
 string ssd_devname("/dev/sdf2");
 
+#define whine (cerr << pname << ": ")
+
 void usage(string pname) {
-  cerr << "Usage: " << pname << " [-s SSD_LOCATION] [-K | -M | -G]" << endl;
+  cerr << "Usage: " << pname << " [-s SSD_LOCATION] [-K | -M | -G] -n CACHE_ENTRIES" << endl;
   cerr << "Options:" << endl;
   cerr << "\t-s\t\tlocation of the SSD. If unspecified, the default value is " << ssd_devname << endl;
   cerr << "\t-K | -M | -G\tset base for displaying volume size" << endl;
+  cerr << "\t-n\t\tnumber of cache entries" << endl;
   exit(EXIT_FAILURE);
 }
 
@@ -33,7 +38,8 @@ int main(int argc, char* argv[]) {
   uint64_t ssd_dev_size;
   uint64_t ssd_sector_size;
   uint64_t object_size = 1024*4096;
-  while ((opt = getopt(argc, argv, "s:GMK")) != -1) {
+  uint64_t cache_entries = 0;
+  while ((opt = getopt(argc, argv, "s:GMKn:")) != -1) {
     switch (opt) {
       case 's':
         ssd_devname = optarg;
@@ -50,30 +56,42 @@ int main(int argc, char* argv[]) {
         base_size_str = "KB";
         base_size = 1 << 10;
         break;
+      case 'n':
+        try {
+          cache_entries = std::stoull(optarg);
+        } catch (const std::exception& e) {
+          whine << "Invalid number of cache entries." << endl;
+          usage(pname);
+        }
+        break;
       default:
         usage(pname);
     }
   }
+  if (!cache_entries) {
+    whine << "Invalid nunber of cache entries." << endl;
+    usage(pname);
+  }
   ssd_fd = open(ssd_devname.c_str(), O_RDONLY);
   if (ssd_fd < 0) {
-    cerr << "Cannot open " << ssd_devname << ": " << strerror(errno) << endl;
+    whine << "Cannot open " << ssd_devname << ": " << strerror(errno) << endl;
     exit(EXIT_FAILURE);
   }
   lseek(ssd_fd, 0, SEEK_SET);
   if (read(ssd_fd, buffer, 512) < 0) {
-    cerr << "Cannot read SSD superblock " << ssd_devname << ": " << strerror(errno) << endl;
+    whine << "Cannot read SSD superblock " << ssd_devname << ": " << strerror(errno) << endl;
     exit(EXIT_FAILURE);
   }
   if (ioctl(ssd_fd, BLKGETSIZE, &ssd_dev_size) < 0) {
-    cerr << "Cannot get SSD device size: " << strerror(errno) << endl;
+    whine << "Cannot get SSD device size: " << strerror(errno) << endl;
     exit(EXIT_FAILURE);
   }
   if (ioctl(ssd_fd, BLKSSZGET, &ssd_sector_size) < 0) {
-    cerr << "Cannot get SSD sector size: " << strerror(errno) << endl;
+    whine << "Cannot get SSD sector size: " << strerror(errno) << endl;
     exit(EXIT_FAILURE);
   }
   if (object_size % ssd_sector_size) {
-    cerr << "Object size " << object_size << " should be a multiple of sector size " << ssd_sector_size << endl;
+    whine << "Object size " << object_size << " should be a multiple of sector size " << ssd_sector_size << endl;
     exit(EXIT_FAILURE);
   }
 #ifdef DEBUG
