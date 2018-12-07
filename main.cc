@@ -6,10 +6,13 @@
 #include <cerrno>
 #include <limits>
 #include <exception>
+#include <experimental/filesystem>
 #include "fcntl.h"
 #include "unistd.h"
 #include <sys/ioctl.h>
 #include <linux/fs.h>
+
+#include "SpookyV2.h"
 
 using std::string;
 using std::cout;
@@ -22,16 +25,31 @@ string ssd_devname("/dev/sdf2");
 
 #define whine (cerr << pname << ": ")
 #define DEV_PATHLEN   128
+#define NOOP          0
+#define PUT           1
+#define GET           2
+#define EVICT         3
+
+#define SEED          0xbabeface
 
 void usage(string pname) {
-  cerr << "Usage: " << pname << " [-s SSD_LOCATION] [-K | -M | -G] [-n CACHE_ENTRIES] [-r] [-W]" << endl; 
+  cerr << "Usage: " << pname << " [-s SSD_LOCATION] [-K | -M | -G] [-n CACHE_ENTRIES] [-r] [-W] [-h | -?] <-p OBJ | -g OBJ | -e OBJ>" << endl; 
   cerr << "Options:" << endl;
-  cerr << "\t-s\t\tlocation of the SSD. If unspecified, the default value is " << ssd_devname << endl;
-  cerr << "\t-K | -M | -G\tset base for displaying volume size" << endl;
-  cerr << "\t-n\t\tset number of cache entries" << endl;
+  cerr << "\t-s\t\tsets location of the SSD. If unspecified, the default value is " << ssd_devname << endl;
+  cerr << "\t-K | -M | -G\tsets base for displaying volume size" << endl;
+  cerr << "\t-n\t\tsets number of cache entries" << endl;
   cerr << "\t-r\t\tresets the cache" << endl;
   cerr << "\t-W\t\twipes out the cache superblock" << endl;
+  cerr << "\t-h, -?\t\tprints this help message" << endl;
+  cerr << "\t-p OBJ\t\tputs OBJ into the cache" << endl;
+  cerr << "\t-g OBJ\t\tgets OBJ from the cache" << endl;
+  cerr << "\t-e OBJ\t\tevicts OBJ from the cache" << endl;
   exit(EXIT_FAILURE);
+}
+
+int write_superblock(int fd, char* buf, size_t len) {
+  // TODO are there other ways to do this?
+  return write(fd, buf, len);
 }
 
 int read_superblock(int fd, char* buf) {
@@ -72,13 +90,39 @@ int main(int argc, char* argv[]) {
   uint64_t cache_entries = 0;
   bool reset = false;
   bool wipe_superblock = false;
-  while ((opt = getopt(argc, argv, "s:GMKn:rWh?")) != -1) {
+  uint8_t operation = NOOP;
+  string object_name;
+  while ((opt = getopt(argc, argv, "s:GMKn:rWh?p:g:")) != -1) {
     switch (opt) {
       case 's':
         ssd_devname = optarg;
         break;
       case 'r':
         reset = true;
+        break;
+      case 'p':
+        if (operation != NOOP) {
+          cerr << "Can only do one operation at a time" << endl;
+          usage(pname);
+        }
+        operation = PUT;
+        object_name = optarg;
+        break;
+      case 'g':
+        if (operation != NOOP) {
+          cerr << "Can only do one operation at a time" << endl;
+          usage(pname);
+        }
+        operation = GET;
+        object_name = optarg;
+        break;
+      case 'e':
+        if (operation != NOOP) {
+          cerr << "Can only do one operation at a time" << endl;
+          usage(pname);
+        }
+        operation = EVICT;
+        object_name = optarg;
         break;
       case 'W':
         wipe_superblock = true;
@@ -173,7 +217,7 @@ int main(int argc, char* argv[]) {
     header->md_block_size = ssd_md_block_size;
     header->object_size = object_size;
     header->entries = cache_entries;
-    if (write(ssd_fd, (char*)header, sizeof(struct superblock)) < 0) {
+    if (write_superblock(ssd_fd, (char*)header, sizeof(struct superblock)) < 0) {
       whine << "Cannot reset ssd superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
     }
@@ -190,6 +234,25 @@ int main(int argc, char* argv[]) {
 #ifdef DEBUG
     header->print();
 #endif
+    if (!strlen(header->device_name)) {
+      whine << "No ssd device given. Please reset cache superblock first." << endl;
+      exit(EXIT_FAILURE);
+    }
+    // we're gonna put object into cache
+    if (operation == PUT) {
+      // check if object exists
+      if (!std::experimental::filesystem::exists(object_name)) {
+        whine << object_name << " does not exist" << endl;
+        exit(EXIT_FAILURE);
+      }
+      uint32_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
+#ifdef DEBUG
+      cout << "hashed=" << hashed << endl;
+#endif
+    }
+    // we're gonna get object from cache
+    else if (operation == GET) {
+    }
   }
 
   if (close(ssd_fd) < 0) {
