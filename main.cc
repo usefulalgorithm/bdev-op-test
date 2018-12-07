@@ -13,6 +13,7 @@
 #include <linux/fs.h>
 
 #include "SpookyV2.h"
+#include "stx/btree_map.h"
 
 using std::string;
 using std::cout;
