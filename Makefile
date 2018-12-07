@@ -2,6 +2,9 @@ TARGET = bdev-op-test
 CC = g++
 INCLUDE = include
 CCFLAGS = -g -O3 -std=c++11
+LIBS = -lstdc++fs
+DEPS = SpookyV2.h
+OBJ = main.o SpookyV2.o
 
 .PHONY: all
 
@@ -12,10 +15,10 @@ all: $(TARGET)
 debug: CCFLAGS += -DDEBUG -O0 -Wall
 debug: $(TARGET)
 
-$(TARGET): main.o
-	$(CC) -o $(TARGET) main.o
-main.o: main.cc
-	$(CC) -I$(INCLUDE) $(CCFLAGS) -c main.cc
+$(TARGET): $(OBJ)
+	$(CC) -o $(TARGET) $(OBJ) $(LIBS)
+%.o: %.cc $(DEPS)
+	$(CC) -c -o $@ $< $(CCFLAGS) -I$(INCLUDE)
 
 .PHONY: clean
 
