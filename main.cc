@@ -32,6 +32,8 @@ string ssd_devname("/dev/sdf2");
 
 #define SEED          0xbabeface
 
+typedef uint32_t hash_t;
+
 void usage(string pname) {
   cerr << "Usage: " << pname << " [-s SSD_LOCATION] [-K | -M | -G] [-n CACHE_ENTRIES] [-r] [-W] [-h | -?] <-p OBJ | -g OBJ | -e OBJ>" << endl; 
   cerr << "Options:" << endl;
@@ -57,6 +59,10 @@ int read_superblock(int fd, char* buf) {
   return read(fd, buf, 512);
 }
 
+// cache structure:
+//
+//      [ superblock | b+ tree | data ] 
+
 struct superblock {
   char device_name[DEV_PATHLEN];
   uint32_t sector_size; // how many bytes per sector
@@ -64,7 +70,8 @@ struct superblock {
   uint32_t block_size; // in sectors
   uint32_t md_block_size; // in sectors
   uint32_t object_size; // in sectors
-  uint32_t entries;
+  uint64_t entries;
+  uint64_t tree_size; // in sectors
   void print() {
     cout << "device_name: " << device_name
       << ", sector_size=" << sector_size
@@ -72,7 +79,8 @@ struct superblock {
       << ", block_size=" << block_size
       << ", md_block_size=" << md_block_size
       << ", object_size=" << object_size
-      << ", entries=" << entries << endl;
+      << ", entries=" << entries 
+      << ", tree_size=" << tree_size << endl;
   }
 };
 
@@ -88,6 +96,7 @@ int main(int argc, char* argv[]) {
   uint32_t ssd_md_block_size = 8;
   uint32_t object_size = 1024*4096/512;
   uint64_t cache_entries = 0;
+  uint64_t cache_tree_size = 0;
   bool reset = false;
   bool wipe_superblock = false;
   uint8_t operation = NOOP;
@@ -206,6 +215,8 @@ int main(int argc, char* argv[]) {
       whine << "Maximum entry number exceeded. The limit is " << max_cache_entries << endl;
       exit(EXIT_FAILURE);
     }
+
+    cache_tree_size = sizeof(hash_t) * cache_entries / 512 + 1;
     
     // set the attributes in the superblock
     struct superblock* header = (struct superblock*)malloc(sizeof(struct superblock));
@@ -217,6 +228,7 @@ int main(int argc, char* argv[]) {
     header->md_block_size = ssd_md_block_size;
     header->object_size = object_size;
     header->entries = cache_entries;
+    header->tree_size = cache_tree_size;
     if (write_superblock(ssd_fd, (char*)header, sizeof(struct superblock)) < 0) {
       whine << "Cannot reset ssd superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
@@ -252,6 +264,17 @@ int main(int argc, char* argv[]) {
     }
     // we're gonna get object from cache
     else if (operation == GET) {
+      uint32_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
+#ifdef DEBUG
+      cout << "hashed=" << hashed << endl;
+#endif
+    }
+    // we're gonna evict object from cache
+    else {
+      hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
+#ifdef DEBUG
+      cout << "hashed=" << hashed << endl;
+#endif
     }
   }
 
