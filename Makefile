@@ -1,5 +1,5 @@
 CC = g++
-INCLUDE = include
+INCLUDE = ./include
 CCFLAGS = -g -O3 -std=c++11
 LIBS = -lstdc++fs
 DEPS = SpookyV2.h
