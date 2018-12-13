@@ -1,2 +1,3 @@
 boost/
 include/boost
+lib/libboost*
