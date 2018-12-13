@@ -1,5 +1,9 @@
 # bdev-op-test
 
+Author: [Andy Lii](mailto:usefulalgorithm@gmail.com)
+
+## Description
+
 The purpose of this project is to investigate ways to directly perform read /
 write operations on block devices, without using filesystem to manage metadata.
 
@@ -16,4 +20,8 @@ SpookyHash is chosen for its lightweight implementation and nice performance.
 The STX B+ Tree package is a set of C++ template classes implementing a B+ tree
 key/data container in main memory. It is written by Timo Bingmann under GPLv3.
 
-Author: [Andy Lii](mailto:usefulalgorithm@gmail.com)
+## Install
+
+```
+$ ./check_boost.sh && make
+```
