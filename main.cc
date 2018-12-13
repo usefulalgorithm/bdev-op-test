@@ -239,6 +239,10 @@ int main(int argc, char* argv[]) {
 
   // read existing superblock
   else {
+    if (!object_name.length()) {
+      whine << "No object given" << endl;
+      exit(EXIT_FAILURE);
+    }
     if (read_superblock(ssd_fd, buffer) < 0) {
       whine << "Cannot read SSD superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
@@ -271,10 +275,16 @@ int main(int argc, char* argv[]) {
 #endif
     }
     // we're gonna evict object from cache
-    else {
+    else if (operation == EVICT) {
       hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
 #ifdef DEBUG
       cout << "hashed=" << hashed << endl;
+#endif
+    }
+    // we're just gonna do nothing
+    else {
+#ifdef DEBUG
+      cout << "no op" << endl;
 #endif
     }
   }
