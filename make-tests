@@ -1,0 +1,10 @@
+#!/bin/bash
+if [ -z "$1" ]; then
+  echo "Usage: $0 <number_of_objs>"
+  exit
+fi
+mkdir -p rbd-test-data
+cd rbd-test-data
+END=$1
+for (( i = 0; i < END; i++ )); do dd if=/dev/urandom of=rbd.data.$i bs=4M count=1; done
+cd ..
