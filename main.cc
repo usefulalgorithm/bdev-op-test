@@ -11,18 +11,23 @@
 #include "unistd.h"
 #include <sys/ioctl.h>
 #include <linux/fs.h>
+#include <boost/iostreams/device/file_descriptor.hpp>
+#include <boost/iostreams/stream.hpp>
 
 #include "SpookyV2.h"
-#include "stx/btree_map.h"
+#include "stx/btree_set.h"
 
 using std::string;
 using std::cout;
 using std::cerr;
 using std::endl;
 
+namespace io = boost::iostreams;
+
 const int buf_size = 512;
 char buffer[buf_size];
 string ssd_devname("/dev/sdf2");
+static string pname;
 
 #define whine (cerr << pname << ": ")
 #define DEV_PATHLEN   128
@@ -60,6 +65,24 @@ int read_superblock(int fd, char* buf) {
   return read(fd, buf, 512);
 }
 
+void write_btree(int fd, stx::btree_set<hash_t>& bset) {
+  lseek(fd, 512, SEEK_SET);
+  io::file_descriptor_sink fds(fd, io::never_close_handle);
+  io::stream_buffer<io::file_descriptor_sink> sb(fds);
+  std::ostream os(&sb);
+  bset.dump(os);
+}
+
+void read_btree(int fd, stx::btree_set<hash_t>& bset) {
+  lseek(fd, 512, SEEK_SET);
+  io::file_descriptor_source fds(fd, io::never_close_handle);
+  io::stream_buffer<io::file_descriptor_source> sb(fds);
+  std::istream is(&sb);
+  if (!bset.restore(is)) {
+    whine << "Cannot restore b+ tree" << endl;
+    exit(EXIT_FAILURE);
+  }
+}
 // cache structure:
 //
 //      [ superblock | b+ tree | data ] 
@@ -85,8 +108,10 @@ struct superblock {
   }
 };
 
+static stx::btree_set<hash_t> bset;
+
 int main(int argc, char* argv[]) {
-  string pname = argv[0];
+  pname = argv[0];
   // default ssd location
   int opt, ssd_fd;
   uint64_t base_size = 1;
@@ -235,6 +260,9 @@ int main(int argc, char* argv[]) {
       exit(EXIT_FAILURE);
     }
     free(header);
+
+    // write an empty b+ tree to disk at reset
+    write_btree(ssd_fd, bset);
   }
 
   // read existing superblock
@@ -255,31 +283,54 @@ int main(int argc, char* argv[]) {
       whine << "No ssd device given. Please reset cache superblock first." << endl;
       exit(EXIT_FAILURE);
     }
-    // we're gonna put object into cache
-    if (operation == PUT) {
-      // check if object exists
-      if (!std::experimental::filesystem::exists(object_name)) {
-        whine << object_name << " does not exist" << endl;
-        exit(EXIT_FAILURE);
+    if (operation != NOOP) {
+      // restore b+ tree here
+      read_btree(ssd_fd, bset);
+      hash_t hashed = 0;
+
+      switch (operation) {
+        case PUT:
+          {
+            // check if object exists
+            if (!std::experimental::filesystem::exists(object_name)) {
+              whine << object_name << " does not exist" << endl;
+              exit(EXIT_FAILURE);
+            }
+            hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
+            auto ret = bset.insert(hashed);
+#ifdef DEBUG
+            cout << "hashed=" << hashed << endl;
+            if (ret.second == false)
+              cout << "object already in set, ignoring" << endl;
+#endif
+            break;
+          }
+        case GET:
+          {
+            hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
+#ifdef DEBUG
+            cout << "hashed=" << hashed << endl;
+#endif
+            break;
+          }
+        case EVICT:
+          {
+            hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
+#ifdef DEBUG
+            cout << "hashed=" << hashed << endl;
+#endif
+            break;
+          }
+        default:
+          {
+            whine << "unknown operation" << endl;
+            exit(EXIT_FAILURE);
+            break;
+          }
       }
-      uint32_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
-#ifdef DEBUG
-      cout << "hashed=" << hashed << endl;
-#endif
-    }
-    // we're gonna get object from cache
-    else if (operation == GET) {
-      uint32_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
-#ifdef DEBUG
-      cout << "hashed=" << hashed << endl;
-#endif
-    }
-    // we're gonna evict object from cache
-    else if (operation == EVICT) {
-      hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
-#ifdef DEBUG
-      cout << "hashed=" << hashed << endl;
-#endif
+
+      // dump b+ tree here
+      write_btree(ssd_fd, bset);
     }
     // we're just gonna do nothing
     else {
