@@ -1,5 +1,5 @@
 #!/bin/bash
-if [ -z "$1" ]; then
+if [ -z "$1" ] || [ $# -ne 1 ]; then
   echo "Usage: $0 <number_of_objs>"
   exit
 fi
