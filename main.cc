@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
   bool wipe_superblock = false;
   uint8_t operation = NOOP;
   string object_name;
-  while ((opt = getopt(argc, argv, "s:GMKn:rWh?p:g:")) != -1) {
+  while ((opt = getopt(argc, argv, "s:GMKn:rWh?p:g:e:")) != -1) {
     switch (opt) {
       case 's':
         ssd_devname = optarg;
@@ -267,10 +267,6 @@ int main(int argc, char* argv[]) {
 
   // read existing superblock
   else {
-    if (!object_name.length()) {
-      whine << "No object given" << endl;
-      exit(EXIT_FAILURE);
-    }
     if (read_superblock(ssd_fd, buffer) < 0) {
       whine << "Cannot read SSD superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
@@ -281,6 +277,10 @@ int main(int argc, char* argv[]) {
 #endif
     if (!strlen(header->device_name)) {
       whine << "No ssd device given. Please reset cache superblock first." << endl;
+      exit(EXIT_FAILURE);
+    }
+    if (!object_name.length()) {
+      whine << "No object given" << endl;
       exit(EXIT_FAILURE);
     }
     if (operation != NOOP) {
@@ -303,22 +303,33 @@ int main(int argc, char* argv[]) {
             if (ret.second == false)
               cout << "object already in set, ignoring" << endl;
 #endif
+            // TODO write data onto disk
             break;
           }
         case GET:
           {
             hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
+            auto ret = bset.find(hashed);
 #ifdef DEBUG
             cout << "hashed=" << hashed << endl;
 #endif
+            if (ret == bset.end())
+              cout << "object not in set, exiting" << endl;
+            // TODO get data from disk
             break;
           }
         case EVICT:
           {
             hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
+            auto ret = bset.find(hashed);
 #ifdef DEBUG
             cout << "hashed=" << hashed << endl;
 #endif
+            if (ret == bset.end()) {
+              cout << "object not in set, exiting" << endl;
+              exit(EXIT_FAILURE);
+            }
+            bset.erase(ret);
             break;
           }
         default:
