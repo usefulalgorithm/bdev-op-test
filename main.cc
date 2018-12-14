@@ -31,7 +31,8 @@ char buffer[buf_size];
 string ssd_devname("/dev/sdf2");
 static string pname;
 
-#define whine (cerr << pname << ": ")
+#define whine (cerr << "[ERROR]\t" << __func__ << ": ")
+#define log   (cout << "[INFO]\t" <<  __func__ << ": ")
 #define DEV_PATHLEN   128
 #define NOOP          0
 #define PUT           1
@@ -74,6 +75,10 @@ void write_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
   io::stream_buffer<io::file_descriptor_sink> sb(fds);
   std::ostream os(&sb);
   bmap.dump(os);
+#ifdef DEBUG
+  long pos = os.tellp();
+  log << "on disk pos=" << pos << endl;
+#endif
 }
 
 void read_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
@@ -100,7 +105,7 @@ struct superblock {
   uint64_t entries;
   uint64_t tree_size; // in sectors
   void print() {
-    cout << "device_name: " << device_name
+    log << "device_name: " << device_name
       << ", sector_size=" << sector_size
       << ", device_size=" << device_size
       << ", block_size=" << block_size
@@ -206,7 +211,7 @@ int main(int argc, char* argv[]) {
       exit(EXIT_FAILURE);
     }
 #ifdef DEBUG
-    cout << "Wiped entire superblock!" << endl;
+    log << "Wiped entire superblock!" << endl;
 #endif
     if (close(ssd_fd) < 0) {
       whine << "Cannot close " << ssd_devname << ": " << strerror(errno) << endl;
@@ -289,7 +294,10 @@ int main(int argc, char* argv[]) {
     if (operation != NOOP) {
       // restore b+ tree here
       read_btree(ssd_fd, bmap);
-      hash_t hashed = 0;
+      hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
+#ifdef DEBUG
+      log << "hashed=" << hashed << endl;
+#endif
       sector_t sector = 0;
 
       switch (operation) {
@@ -300,37 +308,29 @@ int main(int argc, char* argv[]) {
               whine << object_name << " does not exist" << endl;
               exit(EXIT_FAILURE);
             }
-            hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
             auto ret = bmap.insert(std::pair<hash_t, sector_t>(hashed, sector));
 #ifdef DEBUG
-            cout << "hashed=" << hashed << endl;
             if (ret.second == false)
-              cout << "object already in btree, ignoring" << endl;
+              log << "object already in btree, ignoring" << endl;
 #endif
             // TODO write data onto disk
             break;
           }
         case GET:
           {
-            hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
             auto ret = bmap.find(hashed);
-#ifdef DEBUG
-            cout << "hashed=" << hashed << endl;
-#endif
-            if (ret == bmap.end())
-              cout << "object not in btree, exiting" << endl;
+            if (ret == bmap.end()) {
+              whine << "object not in btree, exiting" << endl;
+              exit(EXIT_FAILURE);
+            }
             // TODO get data from disk
             break;
           }
         case EVICT:
           {
-            hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
             auto ret = bmap.find(hashed);
-#ifdef DEBUG
-            cout << "hashed=" << hashed << endl;
-#endif
             if (ret == bmap.end()) {
-              cout << "object not in btree, exiting" << endl;
+              whine << "object not in btree, exiting" << endl;
               exit(EXIT_FAILURE);
             }
             bmap.erase(ret);
