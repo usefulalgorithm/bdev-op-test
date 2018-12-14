@@ -15,7 +15,9 @@
 #include <boost/iostreams/stream.hpp>
 
 #include "SpookyV2.h"
-#include "stx/btree_set.h"
+// use map to store location of the data
+// (hashed val of obj name) ===> (location on disk)
+#include "stx/btree_map.h"
 
 using std::string;
 using std::cout;
@@ -39,6 +41,7 @@ static string pname;
 #define SEED          0xbabeface
 
 typedef uint32_t hash_t;
+typedef uint32_t sector_t;
 
 void usage(string pname) {
   cerr << "Usage: " << pname << " [-s SSD_LOCATION] [-K | -M | -G] [-n CACHE_ENTRIES] [-r] [-W] [-h | -?] <-p OBJ | -g OBJ | -e OBJ>" << endl; 
@@ -65,20 +68,20 @@ int read_superblock(int fd, char* buf) {
   return read(fd, buf, 512);
 }
 
-void write_btree(int fd, stx::btree_set<hash_t>& bset) {
+void write_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
   lseek(fd, 512, SEEK_SET);
   io::file_descriptor_sink fds(fd, io::never_close_handle);
   io::stream_buffer<io::file_descriptor_sink> sb(fds);
   std::ostream os(&sb);
-  bset.dump(os);
+  bmap.dump(os);
 }
 
-void read_btree(int fd, stx::btree_set<hash_t>& bset) {
+void read_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
   lseek(fd, 512, SEEK_SET);
   io::file_descriptor_source fds(fd, io::never_close_handle);
   io::stream_buffer<io::file_descriptor_source> sb(fds);
   std::istream is(&sb);
-  if (!bset.restore(is)) {
+  if (!bmap.restore(is)) {
     whine << "Cannot restore b+ tree" << endl;
     exit(EXIT_FAILURE);
   }
@@ -108,7 +111,7 @@ struct superblock {
   }
 };
 
-static stx::btree_set<hash_t> bset;
+static stx::btree_map<hash_t, sector_t> bmap;
 
 int main(int argc, char* argv[]) {
   pname = argv[0];
@@ -262,7 +265,7 @@ int main(int argc, char* argv[]) {
     free(header);
 
     // write an empty b+ tree to disk at reset
-    write_btree(ssd_fd, bset);
+    write_btree(ssd_fd, bmap);
   }
 
   // read existing superblock
@@ -285,8 +288,9 @@ int main(int argc, char* argv[]) {
     }
     if (operation != NOOP) {
       // restore b+ tree here
-      read_btree(ssd_fd, bset);
+      read_btree(ssd_fd, bmap);
       hash_t hashed = 0;
+      sector_t sector = 0;
 
       switch (operation) {
         case PUT:
@@ -297,11 +301,11 @@ int main(int argc, char* argv[]) {
               exit(EXIT_FAILURE);
             }
             hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
-            auto ret = bset.insert(hashed);
+            auto ret = bmap.insert(std::pair<hash_t, sector_t>(hashed, sector));
 #ifdef DEBUG
             cout << "hashed=" << hashed << endl;
             if (ret.second == false)
-              cout << "object already in set, ignoring" << endl;
+              cout << "object already in btree, ignoring" << endl;
 #endif
             // TODO write data onto disk
             break;
@@ -309,27 +313,27 @@ int main(int argc, char* argv[]) {
         case GET:
           {
             hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
-            auto ret = bset.find(hashed);
+            auto ret = bmap.find(hashed);
 #ifdef DEBUG
             cout << "hashed=" << hashed << endl;
 #endif
-            if (ret == bset.end())
-              cout << "object not in set, exiting" << endl;
+            if (ret == bmap.end())
+              cout << "object not in btree, exiting" << endl;
             // TODO get data from disk
             break;
           }
         case EVICT:
           {
             hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
-            auto ret = bset.find(hashed);
+            auto ret = bmap.find(hashed);
 #ifdef DEBUG
             cout << "hashed=" << hashed << endl;
 #endif
-            if (ret == bset.end()) {
-              cout << "object not in set, exiting" << endl;
+            if (ret == bmap.end()) {
+              cout << "object not in btree, exiting" << endl;
               exit(EXIT_FAILURE);
             }
-            bset.erase(ret);
+            bmap.erase(ret);
             break;
           }
         default:
@@ -341,7 +345,7 @@ int main(int argc, char* argv[]) {
       }
 
       // dump b+ tree here
-      write_btree(ssd_fd, bset);
+      write_btree(ssd_fd, bmap);
     }
     // we're just gonna do nothing
     else {
