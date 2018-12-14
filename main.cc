@@ -27,6 +27,8 @@ using std::endl;
 namespace io = boost::iostreams;
 
 const int buf_size = 512;
+const int part_sb_size = 1;
+const int part_btree_size = 128;
 char buffer[buf_size];
 string ssd_devname("/dev/sdf2");
 static string pname;
@@ -93,7 +95,8 @@ void read_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
 }
 // cache structure:
 //
-//      [ superblock | b+ tree | data ] 
+//      [   superblock   |   b+ tree   |   data   ]
+//          ( 1 sec.)       (128 sec.)    (rest)
 
 struct superblock {
   char device_name[DEV_PATHLEN];
@@ -230,10 +233,6 @@ int main(int argc, char* argv[]) {
       whine << "Cannot get SSD sector size: " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
     }
-    if (object_size % ssd_sector_size) {
-      whine << "Object size " << object_size << " should be a multiple of sector size " << ssd_sector_size << endl;
-      exit(EXIT_FAILURE);
-    }
     if (!cache_entries) {
       whine << "Invalid number of cache entries." << endl;
       usage(pname);
@@ -244,7 +243,7 @@ int main(int argc, char* argv[]) {
       << ", block size = " << ssd_block_size*512 << "B"
       << ", object size = " << object_size*512/base_size << base_size_str << endl;
 #endif
-    uint64_t max_cache_entries = std::min((ssd_dev_size * 512) / object_size, uint64_t((1UL << 32) -1));
+    uint64_t max_cache_entries = std::min((ssd_dev_size - part_sb_size - part_btree_size) / object_size - 1, uint64_t((1UL << 32) -1));
     if (cache_entries > max_cache_entries) {
       whine << "Maximum entry number exceeded. The limit is " << max_cache_entries << endl;
       exit(EXIT_FAILURE);
