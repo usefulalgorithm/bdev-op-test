@@ -1,16 +1,3 @@
-#include <iostream>
-#include <algorithm>
-#include <string>
-#include <cstdlib>
-#include <cstring>
-#include <cerrno>
-#include <limits>
-#include <exception>
-#include <experimental/filesystem>
-#include "fcntl.h"
-#include "unistd.h"
-#include <sys/ioctl.h>
-#include <linux/fs.h>
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
 
@@ -19,47 +6,14 @@
 // (hashed val of obj name) ===> (location on disk)
 #include "stx/btree_map.h"
 
-using std::string;
-using std::cout;
-using std::cerr;
-using std::endl;
+#include "utils.h"
+#include "cache.h"
 
 namespace io = boost::iostreams;
 
-const int buf_size = 512;
-const int part_sb_size = 1;
-const int part_btree_size = 128;
 char buffer[buf_size];
-string ssd_devname("/dev/sdf2");
-static string pname;
 
-#define whine (cerr << "[ERROR]\t" << __func__ << ": ")
-#define log   (cout << "[INFO]\t" <<  __func__ << ": ")
-#define DEV_PATHLEN   128
-#define NOOP          0
-#define PUT           1
-#define GET           2
-#define EVICT         3
 
-#define SEED          0xbabeface
-
-typedef uint32_t hash_t;
-typedef uint32_t sector_t;
-
-void usage(string pname) {
-  cerr << "Usage: " << pname << " [-s SSD_LOCATION] [-K | -M | -G] [-n CACHE_ENTRIES] [-r] [-W] [-h | -?] <-p OBJ | -g OBJ | -e OBJ>" << endl; 
-  cerr << "Options:" << endl;
-  cerr << "\t-s\t\tsets location of the SSD. If unspecified, the default value is " << ssd_devname << endl;
-  cerr << "\t-K | -M | -G\tsets base for displaying volume size" << endl;
-  cerr << "\t-n\t\tsets number of cache entries" << endl;
-  cerr << "\t-r\t\tresets the cache" << endl;
-  cerr << "\t-W\t\twipes out the cache superblock" << endl;
-  cerr << "\t-h, -?\t\tprints this help message" << endl;
-  cerr << "\t-p OBJ\t\tputs OBJ into the cache" << endl;
-  cerr << "\t-g OBJ\t\tgets OBJ from the cache" << endl;
-  cerr << "\t-e OBJ\t\tevicts OBJ from the cache" << endl;
-  exit(EXIT_FAILURE);
-}
 
 int write_superblock(int fd, char* buf, size_t len) {
   // TODO are there other ways to do this?
@@ -98,26 +52,6 @@ void read_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
 //      [   superblock   |   b+ tree   |   data   ]
 //          ( 1 sec.)       (128 sec.)    (rest)
 
-struct superblock {
-  char device_name[DEV_PATHLEN];
-  uint32_t sector_size; // how many bytes per sector
-  uint64_t device_size; // in sectors
-  uint32_t block_size; // in sectors
-  uint32_t md_block_size; // in sectors
-  uint32_t object_size; // in sectors
-  uint64_t entries;
-  uint64_t tree_size; // in sectors
-  void print() {
-    log << "device_name: " << device_name
-      << ", sector_size=" << sector_size
-      << ", device_size=" << device_size
-      << ", block_size=" << block_size
-      << ", md_block_size=" << md_block_size
-      << ", object_size=" << object_size
-      << ", entries=" << entries 
-      << ", tree_size=" << tree_size << endl;
-  }
-};
 
 static stx::btree_map<hash_t, sector_t> bmap;
 
@@ -237,12 +171,6 @@ int main(int argc, char* argv[]) {
       whine << "Invalid number of cache entries." << endl;
       usage(pname);
     }
-#ifdef DEBUG
-    cout << ssd_devname << ": device size = " << (ssd_dev_size * 512)/base_size << base_size_str
-      << ", sector size = " << ssd_sector_size << "B"
-      << ", block size = " << ssd_block_size*512 << "B"
-      << ", object size = " << object_size*512/base_size << base_size_str << endl;
-#endif
     uint64_t max_cache_entries = std::min((ssd_dev_size - part_sb_size - part_btree_size) / object_size - 1, uint64_t((1UL << 32) -1));
     if (cache_entries > max_cache_entries) {
       whine << "Maximum entry number exceeded. The limit is " << max_cache_entries << endl;
@@ -250,6 +178,16 @@ int main(int argc, char* argv[]) {
     }
 
     cache_tree_size = sizeof(hash_t) * cache_entries / 512 + 1;
+
+#ifdef DEBUG
+    log << ssd_devname << endl;
+    log << "\tdevice size = " << (ssd_dev_size * 512)/base_size << base_size_str << endl;
+    log << "\tsector size = " << ssd_sector_size << "B" << endl;
+    log << "\tblock size = " << ssd_block_size*512 << "B" << endl;
+    log << "\tobject size = " << object_size*512/base_size << base_size_str << endl;
+    log << "\tcache entries = " << cache_entries << endl;
+    log << "\tcache tree size = " << cache_tree_size << endl;
+#endif
     
     // set the attributes in the superblock
     struct superblock* header = (struct superblock*)malloc(sizeof(struct superblock));
@@ -297,6 +235,7 @@ int main(int argc, char* argv[]) {
 #ifdef DEBUG
       log << "hashed=" << hashed << endl;
 #endif
+      // the actual location on disk
       sector_t sector = 0;
 
       switch (operation) {
@@ -349,7 +288,7 @@ int main(int argc, char* argv[]) {
     // we're just gonna do nothing
     else {
 #ifdef DEBUG
-      cout << "no op" << endl;
+      log << "no op" << endl;
 #endif
     }
   }
