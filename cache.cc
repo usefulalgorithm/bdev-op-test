@@ -25,8 +25,31 @@ void superblock::print() {
     << ", sector_size=" << sector_size
     << ", device_size=" << device_size
     << ", block_size=" << block_size
-    << ", md_block_size=" << md_block_size
     << ", object_size=" << object_size
     << ", entries=" << entries 
-    << ", tree_size=" << tree_size << endl;
+    << ", associativity=" << associativity << endl;
 }
+
+void cache_metadata_set::print() {
+  log << "set_id=" << set_id
+    << ", lru_head=" << lru_head
+    << ", lru_tail=" << lru_tail
+    << ", invalid_head=" << invalid_head
+    << ", PBA_begin=" << PBA_begin
+    << ", PBA_end=" << PBA_end
+    << ", checksum=" << checksum
+    << ", unclean=" << unclean << endl;
+}
+
+void cache_metadata_entry::print() {
+  log << "image_id=" << image_id
+    << ", object_id=" << object_id
+    << ", index=" << index
+    << ", valid_bit=" << valid_bit
+    << ", PBA=" << PBA
+    << ", lru_prev=" << lru_prev 
+    << ", lru_next=" << lru_next 
+    << ", prev=" << prev 
+    << ", next=" << next << endl;
+}
+

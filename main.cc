@@ -84,19 +84,25 @@ int main(int argc, char* argv[]) {
   uint64_t ssd_dev_size = 0;
   uint32_t ssd_sector_size = 0;
   uint32_t ssd_block_size = 8;
-  uint32_t ssd_md_block_size = 8;
   uint32_t object_size = 1024*4096/512;
   uint64_t cache_entries = 0;
-  uint64_t cache_tree_size = 0;
+  uint64_t cache_associativity = 0;
   bool reset = false;
   bool wipe_superblock = false;
   uint8_t operation = NOOP;
   string object_name;
-  while ((opt = getopt(argc, argv, "s:GMKn:rWh?p:g:e:")) != -1) {
+  while ((opt = getopt(argc, argv, "s:GMKn:ra:Wh?p:g:e:")) != -1) {
     switch (opt) {
       case 's':
         ssd_devname = optarg;
         break;
+      case 'a':
+        try {
+          cache_associativity = std::stoull(optarg);
+        } catch (const std::exception& e) {
+          whine << "Invalid cache associativity" << endl;
+          usage(pname);
+        }
       case 'r':
         reset = true;
         break;
@@ -196,8 +202,8 @@ int main(int argc, char* argv[]) {
       whine << "Maximum entry number exceeded. The limit is " << max_cache_entries << endl;
       exit(EXIT_FAILURE);
     }
-
-    cache_tree_size = sizeof(hash_t) * cache_entries / 512 + 1;
+    if (cache_associativity == 0)
+      cache_associativity = cache_entries;
 
 #ifdef DEBUG
     log << ssd_devname << endl;
@@ -206,7 +212,7 @@ int main(int argc, char* argv[]) {
     log << "\tblock size = " << ssd_block_size*512 << "B" << endl;
     log << "\tobject size = " << object_size*512/base_size << base_size_str << endl;
     log << "\tcache entries = " << cache_entries << endl;
-    log << "\tcache tree size = " << cache_tree_size << endl;
+    log << "\tcache associativity = " << cache_associativity << endl;
 #endif
     
     // set the attributes in the superblock
@@ -216,10 +222,9 @@ int main(int argc, char* argv[]) {
     header->sector_size = ssd_sector_size;
     header->device_size = ssd_dev_size;
     header->block_size = ssd_block_size;
-    header->md_block_size = ssd_md_block_size;
     header->object_size = object_size;
     header->entries = cache_entries;
-    header->tree_size = cache_tree_size;
+    header->associativity = cache_associativity;
     if (write_superblock(ssd_fd, (char*)header, sizeof(struct superblock)) < 0) {
       whine << "Cannot reset ssd superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
