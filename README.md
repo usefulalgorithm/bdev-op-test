@@ -18,7 +18,8 @@ in the public domain under [CC0](https://creativecommons.org/publicdomain/zero/1
 SpookyHash is chosen for its lightweight implementation and nice performance.
 
 The STX B+ Tree package is a set of C++ template classes implementing a B+ tree
-key/data container in main memory. It is written by Timo Bingmann under GPLv3.
+key/data container in main memory. It is written by Timo Bingmann, and released 
+under the Boost Software License, Version 1.0.
 
 ## Install
 
