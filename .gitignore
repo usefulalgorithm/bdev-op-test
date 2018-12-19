@@ -1,3 +1,5 @@
 boost/
 include/boost
 lib/libboost*
+license.txt
+rbd-test-data/
