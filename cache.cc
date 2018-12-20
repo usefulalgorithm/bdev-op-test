@@ -20,6 +20,19 @@
 
 #include "cache.h"
 
+superblock::superblock() {
+  strncpy(device_name, ssd_devname.c_str(), DEV_PATHLEN);
+  sector_size = ssd_sector_size;
+  device_size = ssd_dev_size;
+  block_size = ssd_block_size;
+  object_size = object_size;
+  entries = cache_entries;
+  associativity = cache_associativity;
+  sets = cache_set_count;
+  md_len = metadata_length;
+  data_len = data_length;
+}
+
 void superblock::print() {
   log << "device_name: " << device_name
     << ", sector_size=" << sector_size

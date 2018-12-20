@@ -36,6 +36,8 @@ struct superblock {
   uint16_t sets;
   uint64_t md_len; // in sectors
   uint64_t data_len; // in sectors
+
+  superblock();
   void print();
 };
 

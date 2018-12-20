@@ -223,19 +223,9 @@ int main(int argc, char* argv[]) {
     log << "\tdata length = " << data_length << " sectors" << endl;
 #endif
     
-    // set the attributes in the superblock
-    struct superblock* header = (struct superblock*)malloc(sizeof(struct superblock));
-    memset(header, 0, sizeof(struct superblock));
-    strncpy(header->device_name, ssd_devname.c_str(), DEV_PATHLEN);
-    header->sector_size = ssd_sector_size;
-    header->device_size = ssd_dev_size;
-    header->block_size = ssd_block_size;
-    header->object_size = object_size;
-    header->entries = cache_entries;
-    header->associativity = cache_associativity;
-    header->sets = cache_set_count;
-    header->md_len = metadata_length;
-    header->data_len = data_length;
+    // reset the attributes in the superblock
+    struct superblock* header = new superblock();
+
     if (write_superblock(ssd_fd, (char*)header, sizeof(struct superblock)) < 0) {
       whine << "Cannot reset ssd superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
