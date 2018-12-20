@@ -27,7 +27,10 @@ void superblock::print() {
     << ", block_size=" << block_size
     << ", object_size=" << object_size
     << ", entries=" << entries 
-    << ", associativity=" << associativity << endl;
+    << ", associativity=" << associativity
+    << ", sets=" << sets
+    << ", md_len=" << md_len
+    << ", data_len=" << data_len << endl;
 }
 
 void cache_metadata_set::print() {

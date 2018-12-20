@@ -33,6 +33,9 @@ struct superblock {
   uint64_t associativity; // how large is a cache set
                           // this value equals entries if only one set is present,
                           // i.e. fully associative
+  uint16_t sets;
+  uint64_t md_len; // in sectors
+  uint64_t data_len; // in sectors
   void print();
 };
 

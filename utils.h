@@ -46,8 +46,15 @@ uint64_t get_max_cache_entries() {
   return (ssd_dev_size - 1 - cache_set_count) / (ssd_block_size + 1);
 }
 
-void get_partition_lengths() {
-
+void get_parts_lengths() {
+  // three parts
+  //
+  // 1. superblock
+  //  already set
+  // 2. metadata
+  metadata_length = cache_set_count + cache_entries;
+  // 3. data
+  data_length = ssd_dev_size - metadata_length;
 }
 
 // Invoked on reset

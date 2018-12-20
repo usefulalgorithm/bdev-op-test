@@ -42,7 +42,7 @@ using std::endl;
 
 #define whine (cerr << "[ERROR]\t" << __func__ << ": ")
 #define log   (cout << "[INFO]\t" <<  __func__ << ": ")
-#define DEV_PATHLEN   128
+#define DEV_PATHLEN   32
 #define NOOP          0
 #define PUT           1
 #define GET           2
@@ -56,10 +56,6 @@ typedef uint32_t sector_t;
 
 // static variables, lifetime spans the entire program
 
-static const int buf_size = 512;
-static const int part_sb_size = 1;
-static const int part_btree_size = 128;
-
 extern string   pname;
 extern string   ssd_devname;
 extern uint64_t base_size;
@@ -71,5 +67,13 @@ extern uint32_t object_size;
 extern uint64_t cache_entries;
 extern uint64_t cache_associativity;
 extern uint16_t cache_set_count;
+
+static const uint16_t max_cache_set_count = std::numeric_limits<uint16_t>::max();
+
+// lengths
+
+static const uint8_t  superblock_length = 1;
+extern uint64_t       metadata_length;
+extern uint64_t       data_length;
 
 #endif

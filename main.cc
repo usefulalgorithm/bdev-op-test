@@ -31,6 +31,7 @@
 
 namespace io = boost::iostreams;
 
+static const int buf_size = 512;
 char buffer[buf_size];
 
 
@@ -195,10 +196,18 @@ int main(int argc, char* argv[]) {
     assert(cache_associativity > 1);
     set_set_count();
     
-    if (cache_entries > get_max_cache_entries()) {
-      whine << "Maximum entry number exceeded. The limit is " << get_max_cache_entries() << endl;
+    if (cache_set_count > max_cache_set_count) {
+      whine << "Maximum set number exceeded. The limit is " << max_cache_set_count << endl;
       exit(EXIT_FAILURE);
     }
+
+    auto max_cache_entries = get_max_cache_entries();
+    if (cache_entries > max_cache_entries) {
+      whine << "Maximum entry number exceeded. The limit is " << max_cache_entries << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    get_parts_lengths();
 
 #ifdef DEBUG
     log << "\tdevice name = " << ssd_devname << endl;
@@ -209,6 +218,9 @@ int main(int argc, char* argv[]) {
     log << "\tcache entries = " << cache_entries << endl;
     log << "\tcache associativity = " << cache_associativity << endl;
     log << "\tcache set count = " << cache_set_count << endl;
+    log << "\tsuperblock length = " << int(superblock_length) << " sectors" << endl;
+    log << "\tmetadata length = " << metadata_length << " sectors" << endl;
+    log << "\tdata length = " << data_length << " sectors" << endl;
 #endif
     
     // set the attributes in the superblock
@@ -221,6 +233,9 @@ int main(int argc, char* argv[]) {
     header->object_size = object_size;
     header->entries = cache_entries;
     header->associativity = cache_associativity;
+    header->sets = cache_set_count;
+    header->md_len = metadata_length;
+    header->data_len = data_length;
     if (write_superblock(ssd_fd, (char*)header, sizeof(struct superblock)) < 0) {
       whine << "Cannot reset ssd superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
