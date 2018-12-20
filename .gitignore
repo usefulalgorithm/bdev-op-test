@@ -3,3 +3,5 @@ include/boost
 lib/libboost*
 license.txt
 rbd-test-data/
+*.o
+bdev-op-test
