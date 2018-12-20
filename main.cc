@@ -178,36 +178,7 @@ int main(int argc, char* argv[]) {
 
   // get ssd and cache infos, then overwrite ssd superblock
   if (reset) {
-    if (ioctl(ssd_fd, BLKGETSIZE, &ssd_dev_size) < 0) {
-      whine << "Cannot get SSD device size: " << strerror(errno) << endl;
-      exit(EXIT_FAILURE);
-    }
-    if (ioctl(ssd_fd, BLKSSZGET, &ssd_sector_size) < 0) {
-      whine << "Cannot get SSD sector size: " << strerror(errno) << endl;
-      exit(EXIT_FAILURE);
-    }
-    if (!cache_entries) {
-      whine << "Invalid number of cache entries." << endl;
-      usage(pname);
-    }
-
-    if (cache_associativity == 0) // did not specify associativity, assume fully associated
-      cache_associativity = cache_entries;
-    assert(cache_associativity > 1);
-    set_set_count();
-    
-    if (cache_set_count > max_cache_set_count) {
-      whine << "Maximum set number exceeded. The limit is " << max_cache_set_count << endl;
-      exit(EXIT_FAILURE);
-    }
-
-    auto max_cache_entries = get_max_cache_entries();
-    if (cache_entries > max_cache_entries) {
-      whine << "Maximum entry number exceeded. The limit is " << max_cache_entries << endl;
-      exit(EXIT_FAILURE);
-    }
-
-    get_parts_lengths();
+    get_attributes_from_dev(ssd_fd);
 
 #ifdef DEBUG
     log << "\tdevice name = " << ssd_devname << endl;
