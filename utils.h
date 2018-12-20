@@ -38,4 +38,25 @@ void usage(string pname) {
   exit(EXIT_FAILURE);
 }
 
+void set_set_count() {
+  cache_set_count = 1 + (cache_entries-1)/cache_associativity;
+}
+
+uint64_t get_max_cache_entries() {
+  return (ssd_dev_size - 1 - cache_set_count) / (ssd_block_size + 1);
+}
+
+void get_partition_lengths() {
+
+}
+
+// Invoked on reset
+/*
+void wipe_metadata(int fd) {
+  auto length = cache_set_count + cache_entries 
+  char empty_buf[513];
+  std::fill(len, buffer+512, '\0');
+}
+*/
+
 #endif

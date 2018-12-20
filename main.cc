@@ -79,14 +79,6 @@ int main(int argc, char* argv[]) {
   pname = argv[0];
   // default ssd location
   int opt, ssd_fd;
-  uint64_t base_size = 1;
-  string base_size_str = "B";
-  uint64_t ssd_dev_size = 0;
-  uint32_t ssd_sector_size = 0;
-  uint32_t ssd_block_size = 8;
-  uint32_t object_size = 1024*4096/512;
-  uint64_t cache_entries = 0;
-  uint64_t cache_associativity = 0;
   bool reset = false;
   bool wipe_superblock = false;
   uint8_t operation = NOOP;
@@ -197,22 +189,26 @@ int main(int argc, char* argv[]) {
       whine << "Invalid number of cache entries." << endl;
       usage(pname);
     }
-    uint64_t max_cache_entries = std::min((ssd_dev_size - part_sb_size - part_btree_size) / object_size - 1, uint64_t((1UL << 32) -1));
-    if (cache_entries > max_cache_entries) {
-      whine << "Maximum entry number exceeded. The limit is " << max_cache_entries << endl;
+
+    if (cache_associativity == 0) // did not specify associativity, assume fully associated
+      cache_associativity = cache_entries;
+    assert(cache_associativity > 1);
+    set_set_count();
+    
+    if (cache_entries > get_max_cache_entries()) {
+      whine << "Maximum entry number exceeded. The limit is " << get_max_cache_entries() << endl;
       exit(EXIT_FAILURE);
     }
-    if (cache_associativity == 0)
-      cache_associativity = cache_entries;
 
 #ifdef DEBUG
-    log << ssd_devname << endl;
+    log << "\tdevice name = " << ssd_devname << endl;
     log << "\tdevice size = " << (ssd_dev_size * 512)/base_size << base_size_str << endl;
     log << "\tsector size = " << ssd_sector_size << "B" << endl;
     log << "\tblock size = " << ssd_block_size*512 << "B" << endl;
     log << "\tobject size = " << object_size*512/base_size << base_size_str << endl;
     log << "\tcache entries = " << cache_entries << endl;
     log << "\tcache associativity = " << cache_associativity << endl;
+    log << "\tcache set count = " << cache_set_count << endl;
 #endif
     
     // set the attributes in the superblock

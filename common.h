@@ -53,10 +53,23 @@ using std::endl;
 typedef uint32_t hash_t;
 typedef uint32_t sector_t;
 
+
+// static variables, lifetime spans the entire program
+
 static const int buf_size = 512;
 static const int part_sb_size = 1;
 static const int part_btree_size = 128;
-static string ssd_devname("/dev/sdf2");
-static string pname;
+
+extern string   pname;
+extern string   ssd_devname;
+extern uint64_t base_size;
+extern string   base_size_str;
+extern uint64_t ssd_dev_size;
+extern uint32_t ssd_sector_size;
+extern uint32_t ssd_block_size;
+extern uint32_t object_size;
+extern uint64_t cache_entries;
+extern uint64_t cache_associativity;
+extern uint16_t cache_set_count;
 
 #endif
