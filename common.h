@@ -49,6 +49,8 @@ using std::endl;
 #define EVICT         3
 
 #define SEED          0xbabeface
+#define CACHE_NULL    0xFFFFFFFF
+#define MD_SET_LEN    (1 + cache_associativity) * ssd_sector_size
 
 typedef uint32_t hash_t;
 typedef uint32_t sector_t;
@@ -63,7 +65,7 @@ extern string   base_size_str;
 extern uint64_t ssd_dev_size;
 extern uint32_t ssd_sector_size;
 extern uint32_t ssd_block_size;
-extern uint32_t object_size;
+extern uint32_t cache_obj_size;
 extern uint64_t cache_entries;
 extern uint64_t cache_associativity;
 extern uint16_t cache_set_count;
@@ -75,5 +77,10 @@ static const uint16_t max_cache_set_count = std::numeric_limits<uint16_t>::max()
 static const uint8_t  superblock_length = 1;
 extern uint64_t       metadata_length;
 extern uint64_t       data_length;
+
+// operations
+
+extern bool reset;
+extern bool wipe_superblock;
 
 #endif

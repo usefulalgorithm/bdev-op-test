@@ -50,6 +50,7 @@ struct cache_metadata_set { // size = 1 sector
   uint32_t checksum;
   bool unclean; // set if metadata and data are mismatched
 
+  cache_metadata_set(int);
   void print();
 };
 
@@ -67,5 +68,8 @@ struct cache_metadata_entry { // size = 1 sector
 
 int write_superblock(int fd, char* buf, size_t len);
 int read_superblock(int fd, char* buf);
+
+int write_metadata_set(int fd, int set_id);
+int reset_metadata_entries();
 
 #endif

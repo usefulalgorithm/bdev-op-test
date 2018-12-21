@@ -43,7 +43,7 @@ void set_set_count() {
 }
 
 uint64_t get_max_cache_entries() {
-  return (ssd_dev_size - 1 - cache_set_count) / (ssd_block_size + 1);
+  return (ssd_dev_size - 1 - cache_set_count) / (cache_obj_size + 1);
 }
 
 void get_parts_lengths() {
@@ -52,7 +52,7 @@ void get_parts_lengths() {
   // 1. superblock
   //  already set
   // 2. metadata
-  metadata_length = cache_set_count + cache_entries;
+  metadata_length = cache_set_count * (1 + cache_associativity);
   // 3. data
   data_length = ssd_dev_size - metadata_length;
 }
@@ -95,7 +95,7 @@ void print_setup_attributes() {
   log << "\tdevice size = " << (ssd_dev_size * 512)/base_size << base_size_str << endl;
   log << "\tsector size = " << ssd_sector_size << "B" << endl;
   log << "\tblock size = " << ssd_block_size*512 << "B" << endl;
-  log << "\tobject size = " << object_size*512/base_size << base_size_str << endl;
+  log << "\tobject size = " << cache_obj_size*512/base_size << base_size_str << endl;
   log << "\tcache entries = " << cache_entries << endl;
   log << "\tcache associativity = " << cache_associativity << endl;
   log << "\tcache set count = " << cache_set_count << endl;

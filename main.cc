@@ -70,8 +70,6 @@ int main(int argc, char* argv[]) {
   pname = argv[0];
   // default ssd location
   int opt, ssd_fd;
-  bool reset = false;
-  bool wipe_superblock = false;
   uint8_t operation = NOOP;
   string object_name;
   while ((opt = getopt(argc, argv, "s:GMKn:ra:Wh?p:g:e:")) != -1) {
@@ -169,7 +167,6 @@ int main(int argc, char* argv[]) {
   // get ssd and cache infos, then overwrite ssd superblock
   if (reset) {
     get_attributes_from_dev(ssd_fd);
-
 #ifdef DEBUG
     print_setup_attributes();
 #endif
@@ -181,10 +178,19 @@ int main(int argc, char* argv[]) {
       whine << "Cannot reset ssd superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
     }
-    free(header);
+    delete header;
 
     // write an empty b+ tree to disk at reset
+    // FIXME
     write_btree(ssd_fd, bmap);
+
+    // reset all sets
+    for (int i = 0; i < cache_set_count; i++) {
+      if (write_metadata_set(ssd_fd, i) < 0) {
+        whine << "Cannot reset metadata set " << i << ": " << strerror(errno) << endl;
+        exit(EXIT_FAILURE);
+      }
+    }
   }
 
   // read existing superblock

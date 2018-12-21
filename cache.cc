@@ -25,7 +25,7 @@ superblock::superblock() {
   sector_size = ssd_sector_size;
   device_size = ssd_dev_size;
   block_size = ssd_block_size;
-  object_size = object_size;
+  object_size = cache_obj_size;
   entries = cache_entries;
   associativity = cache_associativity;
   sets = cache_set_count;
@@ -39,18 +39,36 @@ void superblock::print() {
     << ", device_size=" << device_size
     << ", block_size=" << block_size
     << ", object_size=" << object_size
-    << ", entries=" << entries 
+    << ", entries=" << entries
     << ", associativity=" << associativity
     << ", sets=" << sets
     << ", md_len=" << md_len
     << ", data_len=" << data_len << endl;
 }
 
+cache_metadata_set::cache_metadata_set(int _set_id) {
+  set_id = _set_id;
+  lru_head = CACHE_NULL, lru_tail = CACHE_NULL;
+  lru_size = 0;
+  invalid_head = CACHE_NULL;
+  auto _PBA_begin = 1 + metadata_length + (_set_id) * cache_obj_size * cache_associativity;
+  PBA_begin = _PBA_begin;
+  PBA_end = _PBA_begin + cache_obj_size * cache_associativity - 1;
+  checksum = 0;
+  unclean = false;
+}
+
 void cache_metadata_set::print() {
-  log << "set_id=" << set_id
-    << ", lru_head=" << lru_head
-    << ", lru_tail=" << lru_tail
-    << ", invalid_head=" << invalid_head
+  auto check_if_null = [] (size_t x) {
+    if (x == 0xFFFFFFFF)
+      return std::string("NULL");
+    else
+      return std::to_string(x);
+  };
+  log << "set_id=" << int(set_id)
+    << ", lru_head=" << check_if_null(lru_head)
+    << ", lru_tail=" << check_if_null(lru_tail)
+    << ", invalid_head=" << check_if_null(invalid_head)
     << ", PBA_begin=" << PBA_begin
     << ", PBA_end=" << PBA_end
     << ", checksum=" << checksum
@@ -63,9 +81,9 @@ void cache_metadata_entry::print() {
     << ", index=" << index
     << ", valid_bit=" << valid_bit
     << ", PBA=" << PBA
-    << ", lru_prev=" << lru_prev 
-    << ", lru_next=" << lru_next 
-    << ", prev=" << prev 
+    << ", lru_prev=" << lru_prev
+    << ", lru_next=" << lru_next
+    << ", prev=" << prev
     << ", next=" << next << endl;
 }
 
@@ -77,4 +95,40 @@ int write_superblock(int fd, char* buf, size_t len) {
 int read_superblock(int fd, char* buf) {
   // TODO are there other ways to do this?
   return read(fd, buf, 512);
+}
+
+int write_metadata_set(int fd, int set_id) {
+  // get metadata set offset
+  //
+  // cache_associativity = length of entries in a set
+  // length of one entry = 1 sector
+  // length of one metadata set info = 1 sector
+  //
+  // offset = (length of superblock)
+  //        + (which set is this)
+  //          * (length of one metadata set info
+  //            + length of one metadata entry)
+  auto offset = superblock_length + set_id * (1 + cache_associativity);
+  auto md_set = new cache_metadata_set(set_id);
+#ifdef DEBUG
+  log << "offset=" << offset << endl;
+  log << sizeof(cache_metadata_set) << endl;
+  md_set->print();
+#endif
+  if (reset) {
+    /*
+    lseek(fd, offset, SEEK_SET);
+    write(fd, (char*)md_set, sizeof(md_set));
+    reset_metadata_entries(fd, offset+1);
+    */
+  }
+  else {
+    // TODO partially update metadata
+  }
+  delete md_set;
+  return 0;
+}
+
+int reset_metadata_entries() {
+  return 0;
 }
