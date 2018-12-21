@@ -31,11 +31,6 @@
 
 namespace io = boost::iostreams;
 
-static const int buf_size = 512;
-char buffer[buf_size];
-
-
-
 void write_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
   lseek(fd, 512, SEEK_SET);
   io::file_descriptor_sink fds(fd, io::never_close_handle);
@@ -58,13 +53,6 @@ void read_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
     exit(EXIT_FAILURE);
   }
 }
-// cache structure:
-//
-//      [   superblock   |   b+ tree   |   data   ]
-//          ( 1 sec.)       (128 sec.)    (rest)
-
-
-static stx::btree_map<hash_t, sector_t> bmap;
 
 int main(int argc, char* argv[]) {
   pname = argv[0];
@@ -149,6 +137,7 @@ int main(int argc, char* argv[]) {
 
   // wipe everything!
   if (wipe_superblock) {
+    char buffer[512];
     std::fill(buffer, buffer+512, '\0');
     if (write(ssd_fd, buffer, 512) < 0) {
       whine << "Cannot wipe out ssd superblock " << ssd_devname << ": " << strerror(errno) << endl;
@@ -172,17 +161,13 @@ int main(int argc, char* argv[]) {
 #endif
     
     // reset the attributes in the superblock
-    struct superblock* header = new superblock();
+    struct superblock* sb = new superblock();
 
-    if (write_superblock(ssd_fd, (char*)header, sizeof(struct superblock)) < 0) {
+    if (write_superblock(ssd_fd, (char*)sb, sizeof(struct superblock)) < 0) {
       whine << "Cannot reset ssd superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
     }
-    delete header;
-
-    // write an empty b+ tree to disk at reset
-    // FIXME
-    write_btree(ssd_fd, bmap);
+    delete sb;
 
     // reset all sets
     for (int i = 0; i < cache_set_count; i++) {
@@ -195,15 +180,16 @@ int main(int argc, char* argv[]) {
 
   // read existing superblock
   else {
-    if (read_superblock(ssd_fd, buffer) < 0) {
+    char sb_buffer[512];
+    if (read_superblock(ssd_fd, sb_buffer) < 0) {
       whine << "Cannot read SSD superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
     }
-    struct superblock* header = (struct superblock*)buffer;
+    struct superblock* sb = (struct superblock*)sb_buffer;
 #ifdef DEBUG
-    header->print();
+    sb->print();
 #endif
-    if (!strlen(header->device_name)) {
+    if (!strlen(sb->device_name)) {
       whine << "No ssd device given. Please reset cache superblock first." << endl;
       exit(EXIT_FAILURE);
     }
@@ -212,6 +198,7 @@ int main(int argc, char* argv[]) {
       exit(EXIT_FAILURE);
     }
     if (operation != NOOP) {
+      /*
       // restore b+ tree here
       read_btree(ssd_fd, bmap);
       hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
@@ -267,6 +254,7 @@ int main(int argc, char* argv[]) {
 
       // dump b+ tree here
       write_btree(ssd_fd, bmap);
+      */
     }
     // we're just gonna do nothing
     else {

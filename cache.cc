@@ -35,15 +35,15 @@ superblock::superblock() {
 
 void superblock::print() {
   log << "device_name: " << device_name
-    << ", sector_size=" << sector_size
-    << ", device_size=" << device_size
-    << ", block_size=" << block_size
-    << ", object_size=" << object_size
+    << ", sector_size=" << sector_size << "B"
+    << ", device_size=" << device_size << "sec."
+    << ", block_size=" << block_size << "sec."
+    << ", object_size=" << object_size << "sec."
     << ", entries=" << entries
     << ", associativity=" << associativity
     << ", sets=" << sets
-    << ", md_len=" << md_len
-    << ", data_len=" << data_len << endl;
+    << ", md_len=" << md_len << "sec."
+    << ", data_len=" << data_len << "sec." << endl;
 }
 
 cache_metadata_set::cache_metadata_set(int _set_id) {
@@ -53,7 +53,9 @@ cache_metadata_set::cache_metadata_set(int _set_id) {
   invalid_head = CACHE_NULL;
   auto _PBA_begin = 1 + metadata_length + (_set_id) * cache_obj_size * cache_associativity;
   PBA_begin = _PBA_begin;
-  PBA_end = _PBA_begin + cache_obj_size * cache_associativity - 1;
+  PBA_end = _PBA_begin + cache_obj_size * cache_associativity;
+  PBA_begin *= ssd_sector_size;
+  PBA_end *= ssd_sector_size;
   checksum = 0;
   unclean = false;
 }
@@ -69,8 +71,8 @@ void cache_metadata_set::print() {
     << ", lru_head=" << check_if_null(lru_head)
     << ", lru_tail=" << check_if_null(lru_tail)
     << ", invalid_head=" << check_if_null(invalid_head)
-    << ", PBA_begin=" << PBA_begin
-    << ", PBA_end=" << PBA_end
+    << ", PBA_begin=" << PBA_begin << "B"
+    << ", PBA_end=" << PBA_end << "B"
     << ", checksum=" << checksum
     << ", unclean=" << unclean << endl;
 }
@@ -80,7 +82,7 @@ void cache_metadata_entry::print() {
     << ", object_id=" << object_id
     << ", index=" << index
     << ", valid_bit=" << valid_bit
-    << ", PBA=" << PBA
+    << ", PBA=" << PBA << "B"
     << ", lru_prev=" << lru_prev
     << ", lru_next=" << lru_next
     << ", prev=" << prev
@@ -108,27 +110,39 @@ int write_metadata_set(int fd, int set_id) {
   //        + (which set is this)
   //          * (length of one metadata set info
   //            + length of one metadata entry)
-  auto offset = superblock_length + set_id * (1 + cache_associativity);
+  auto offset = superblock_length + set_id * (1 + cache_associativity); // in sectors
+  offset *= ssd_sector_size; // now offset is in bytes
   auto md_set = new cache_metadata_set(set_id);
 #ifdef DEBUG
-  log << "offset=" << offset << endl;
-  log << sizeof(cache_metadata_set) << endl;
+  log << "offset=" << offset << "B" << endl;
   md_set->print();
 #endif
+  int ret = 0;
   if (reset) {
-    /*
     lseek(fd, offset, SEEK_SET);
+#ifdef DEBUG
+    log << offset << "~" << offset+ssd_sector_size << endl;
+#endif
     write(fd, (char*)md_set, sizeof(md_set));
-    reset_metadata_entries(fd, offset+1);
-    */
+    ret = reset_metadata_entries(fd, offset+ 1*ssd_sector_size);
   }
   else {
     // TODO partially update metadata
   }
   delete md_set;
-  return 0;
+  return ret;
 }
 
-int reset_metadata_entries() {
+int reset_metadata_entries(int fd, uint32_t start) {
+  if (reset) {
+    lseek(fd, start, SEEK_SET);
+    auto len = ssd_sector_size * cache_associativity; // in bytes
+    char buf[len];
+    std::fill(buf, buf+len, '\0');
+#ifdef DEBUG
+    log << start << "~" << start + len<< endl;
+#endif
+    return write(fd, buf, len);
+  }
   return 0;
 }

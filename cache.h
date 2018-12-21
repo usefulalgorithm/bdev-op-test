@@ -25,15 +25,15 @@
 
 struct superblock {
   char device_name[DEV_PATHLEN]; // TODO: use uuid
+  uint16_t sets;
   uint32_t sector_size; // bytes per sector
-  uint64_t device_size; // in sectors
   uint32_t block_size; // in sectors, stands for size of cache data chunk
   uint32_t object_size; // in sectors, stands for actual RBD object size
+  uint64_t device_size; // in sectors
   uint64_t entries; // depends on block_size
   uint64_t associativity; // how large is a cache set
                           // this value equals entries if only one set is present,
                           // i.e. fully associative
-  uint16_t sets;
   uint64_t md_len; // in sectors
   uint64_t data_len; // in sectors
 
@@ -43,25 +43,25 @@ struct superblock {
 
 struct cache_metadata_set { // size = 1 sector
   uint8_t set_id;
-  uint32_t lru_head, lru_tail; // index of entries at LRU's head / tail
-  uint64_t lru_size;
-  uint32_t invalid_head; // index of next invalid block. 0 if doesn't exist
-  uint64_t PBA_begin, PBA_end; // boundaries of PBAs of data managed by this set
-  uint32_t checksum;
   bool unclean; // set if metadata and data are mismatched
+  uint32_t checksum;
+  uint32_t lru_head, lru_tail; // index of entries at LRU's head / tail
+  uint32_t invalid_head; // index of next invalid block. 0 if doesn't exist
+  uint64_t lru_size; // how many entries are in this set
+  uint64_t PBA_begin, PBA_end; // boundaries of PBAs of data managed by this set, in bytes
 
   cache_metadata_set(int);
   void print();
 };
 
 struct cache_metadata_entry { // size = 1 sector
+  bool valid_bit;
   char image_id[16];
   char object_id[16];
   uint32_t index; // which sector is this entry on
-  bool valid_bit;
-  uint64_t PBA; // physical block address of data chunk
   uint32_t lru_prev, lru_next; // these denote neighboring LRU entries
   uint32_t prev, next; // these denote neighboring available entries in set
+  uint64_t PBA; // physical block address of data chunk
 
   void print();
 };
@@ -70,6 +70,6 @@ int write_superblock(int fd, char* buf, size_t len);
 int read_superblock(int fd, char* buf);
 
 int write_metadata_set(int fd, int set_id);
-int reset_metadata_entries();
+int reset_metadata_entries(int fd, uint32_t offset);
 
 #endif
