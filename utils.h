@@ -90,9 +90,22 @@ void get_attributes_from_dev(int fd) {
   get_parts_lengths();
 }
 
+void print_setup_attributes() {
+  log << "\tdevice name = " << ssd_devname << endl;
+  log << "\tdevice size = " << (ssd_dev_size * 512)/base_size << base_size_str << endl;
+  log << "\tsector size = " << ssd_sector_size << "B" << endl;
+  log << "\tblock size = " << ssd_block_size*512 << "B" << endl;
+  log << "\tobject size = " << object_size*512/base_size << base_size_str << endl;
+  log << "\tcache entries = " << cache_entries << endl;
+  log << "\tcache associativity = " << cache_associativity << endl;
+  log << "\tcache set count = " << cache_set_count << endl;
+  log << "\tsuperblock length = " << int(superblock_length) << " sectors" << endl;
+  log << "\tmetadata length = " << metadata_length << " sectors" << endl;
+  log << "\tdata length = " << data_length << " sectors" << endl;
+}
 // Invoked on reset
 /*
-void wipe_metadata(int fd) {
+void reset_metadata(int fd) {
   auto length = cache_set_count + cache_entries
   char empty_buf[513];
   std::fill(len, buffer+512, '\0');

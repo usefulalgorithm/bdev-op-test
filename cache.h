@@ -65,4 +65,7 @@ struct cache_metadata_entry { // size = 1 sector
   void print();
 };
 
+int write_superblock(int fd, char* buf, size_t len);
+int read_superblock(int fd, char* buf);
+
 #endif

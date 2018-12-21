@@ -69,3 +69,12 @@ void cache_metadata_entry::print() {
     << ", next=" << next << endl;
 }
 
+int write_superblock(int fd, char* buf, size_t len) {
+  // TODO are there other ways to do this?
+  return write(fd, buf, len);
+}
+
+int read_superblock(int fd, char* buf) {
+  // TODO are there other ways to do this?
+  return read(fd, buf, 512);
+}

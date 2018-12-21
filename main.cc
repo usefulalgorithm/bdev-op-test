@@ -36,16 +36,6 @@ char buffer[buf_size];
 
 
 
-int write_superblock(int fd, char* buf, size_t len) {
-  // TODO are there other ways to do this?
-  return write(fd, buf, len);
-}
-
-int read_superblock(int fd, char* buf) {
-  // TODO are there other ways to do this?
-  return read(fd, buf, 512);
-}
-
 void write_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
   lseek(fd, 512, SEEK_SET);
   io::file_descriptor_sink fds(fd, io::never_close_handle);
@@ -181,17 +171,7 @@ int main(int argc, char* argv[]) {
     get_attributes_from_dev(ssd_fd);
 
 #ifdef DEBUG
-    log << "\tdevice name = " << ssd_devname << endl;
-    log << "\tdevice size = " << (ssd_dev_size * 512)/base_size << base_size_str << endl;
-    log << "\tsector size = " << ssd_sector_size << "B" << endl;
-    log << "\tblock size = " << ssd_block_size*512 << "B" << endl;
-    log << "\tobject size = " << object_size*512/base_size << base_size_str << endl;
-    log << "\tcache entries = " << cache_entries << endl;
-    log << "\tcache associativity = " << cache_associativity << endl;
-    log << "\tcache set count = " << cache_set_count << endl;
-    log << "\tsuperblock length = " << int(superblock_length) << " sectors" << endl;
-    log << "\tmetadata length = " << metadata_length << " sectors" << endl;
-    log << "\tdata length = " << data_length << " sectors" << endl;
+    print_setup_attributes();
 #endif
     
     // reset the attributes in the superblock
