@@ -31,6 +31,7 @@
 #include <cassert>
 #include <limits>
 #include <exception>
+#include <sstream>
 #include <experimental/filesystem>
 #include "fcntl.h"
 #include "unistd.h"
@@ -44,6 +45,12 @@ using std::endl;
 
 #define whine (cerr << "[ERROR]\t" << __func__ << ": ")
 #define log   (cout << "[INFO]\t" <<  __func__ << ": ")
+
+#ifdef DEBUG
+#define debug(x) do { cout << "[DEBUG] " << __func__ << ": " <<  x << endl; } while (0)
+#else
+#define debug(x)
+#endif
 #define DEV_PATHLEN   32
 #define NOOP          0
 #define PUT           1

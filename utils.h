@@ -92,17 +92,19 @@ void get_attributes_from_dev(int fd) {
 }
 
 void print_setup_attributes() {
-  log << "\tdevice name = " << ssd_devname << endl;
-  log << "\tdevice size = " << (ssd_dev_size * 512)/base_size << base_size_str << endl;
-  log << "\tsector size = " << ssd_sector_size << "B" << endl;
-  log << "\tblock size = " << ssd_block_size*512 << "B" << endl;
-  log << "\tobject size = " << cache_obj_size*512/base_size << base_size_str << endl;
-  log << "\tcache entries = " << cache_entries << endl;
-  log << "\tcache associativity = " << cache_associativity << endl;
-  log << "\tcache set count = " << cache_set_count << endl;
-  log << "\tsuperblock length = " << int(superblock_length) << " sectors" << endl;
-  log << "\tmetadata length = " << metadata_length << " sectors" << endl;
-  log << "\tdata length = " << data_length << " sectors" << endl;
+  std::stringstream ss;
+  ss << "device name = " << ssd_devname
+    << ", device size = " << (ssd_dev_size * 512)/base_size << base_size_str
+    << ", sector size = " << ssd_sector_size << "B"
+    << ", block size = " << ssd_block_size*512 << "B" 
+    << ", object size = " << cache_obj_size*512/base_size << base_size_str
+    << ", cache entries = " << cache_entries
+    << ", cache associativity = " << cache_associativity
+    << ", cache set count = " << cache_set_count
+    << ", superblock length = " << int(superblock_length) << " sectors"
+    << ", metadata length = " << metadata_length << " sectors"
+    << ", data length = " << data_length << " sectors" << endl;
+  debug(ss.str());
 }
 
 #endif

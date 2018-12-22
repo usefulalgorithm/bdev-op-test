@@ -36,10 +36,6 @@ void write_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
   io::stream_buffer<io::file_descriptor_sink> sb(fds);
   std::ostream os(&sb);
   bmap.dump(os);
-#ifdef DEBUG
-  long pos = os.tellp();
-  log << "on disk pos=" << pos << endl;
-#endif
 }
 
 void read_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
@@ -142,9 +138,7 @@ int main(int argc, char* argv[]) {
       whine << "Cannot wipe out ssd superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
     }
-#ifdef DEBUG
     log << "Wiped entire superblock!" << endl;
-#endif
     if (close(ssd_fd) < 0) {
       whine << "Cannot close " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
@@ -155,9 +149,7 @@ int main(int argc, char* argv[]) {
   // get ssd and cache infos, then overwrite ssd superblock
   if (reset) {
     get_attributes_from_dev(ssd_fd);
-#ifdef DEBUG
     print_setup_attributes();
-#endif
     
     // reset the attributes in the superblock
     struct superblock* sb = new superblock();
@@ -185,9 +177,7 @@ int main(int argc, char* argv[]) {
       exit(EXIT_FAILURE);
     }
     struct superblock* sb = (struct superblock*)sb_buffer;
-#ifdef DEBUG
     sb->print();
-#endif
     sb->get_attributes();
 
     if (!strlen(sb->device_name)) {
@@ -209,18 +199,11 @@ int main(int argc, char* argv[]) {
       }
       sets.push_back(md_set);
     }
-#ifdef DEBUG
     for (auto i : sets)
       i->print();
-#endif
     if (operation != NOOP) {
-      /*
-      // restore b+ tree here
-      read_btree(ssd_fd, bmap);
       hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
-#ifdef DEBUG
-      log << "hashed=" << hashed << endl;
-#endif
+      debug("hashed=" + std::to_string(hashed));
       // the actual location on disk
       sector_t sector = 0;
 
@@ -232,32 +215,17 @@ int main(int argc, char* argv[]) {
               whine << object_name << " does not exist" << endl;
               exit(EXIT_FAILURE);
             }
-            auto ret = bmap.insert(std::pair<hash_t, sector_t>(hashed, sector));
-#ifdef DEBUG
-            if (ret.second == false)
-              log << "object already in btree, ignoring" << endl;
-#endif
             // TODO write data onto disk
             break;
           }
         case GET:
           {
-            auto ret = bmap.find(hashed);
-            if (ret == bmap.end()) {
-              whine << "object not in btree, exiting" << endl;
-              exit(EXIT_FAILURE);
-            }
             // TODO get data from disk
             break;
           }
         case EVICT:
           {
-            auto ret = bmap.find(hashed);
-            if (ret == bmap.end()) {
-              whine << "object not in btree, exiting" << endl;
-              exit(EXIT_FAILURE);
-            }
-            bmap.erase(ret);
+            debug("EVICT");
             break;
           }
         default:
@@ -267,16 +235,12 @@ int main(int argc, char* argv[]) {
             break;
           }
       }
+      // TODO update metadata here!
 
-      // dump b+ tree here
-      write_btree(ssd_fd, bmap);
-      */
     }
     // we're just gonna do nothing
     else {
-#ifdef DEBUG
       log << "no op" << endl;
-#endif
     }
   }
 

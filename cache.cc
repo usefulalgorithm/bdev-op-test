@@ -34,7 +34,8 @@ superblock::superblock() {
 }
 
 void superblock::print() {
-  log << "device_name: " << device_name
+  std::stringstream ss;
+  ss << "device_name: " << device_name
     << ", sector_size=" << sector_size << "B"
     << ", device_size=" << device_size << "sec."
     << ", block_size=" << block_size << "sec."
@@ -44,6 +45,7 @@ void superblock::print() {
     << ", sets=" << sets
     << ", md_len=" << md_len << "sec."
     << ", data_len=" << data_len << "sec." << endl;
+  debug(ss.str());
 }
 
 cache_metadata_set::cache_metadata_set(int _set_id) {
@@ -80,7 +82,8 @@ void cache_metadata_set::print() {
     else
       return std::to_string(x);
   };
-  log << "set_id=" << int(set_id)
+  std::stringstream ss;
+  ss << "set_id=" << int(set_id)
     << ", lru_head=" << std::hex << check_if_null(lru_head)
     << ", lru_tail=" << check_if_null(lru_tail)
     << ", invalid_head=" << check_if_null(invalid_head)
@@ -88,10 +91,12 @@ void cache_metadata_set::print() {
     << ", PBA_end=" << PBA_end << "B"
     << ", checksum=" << std::dec << checksum
     << ", unclean=" << unclean << endl;
+  debug(ss.str());
 }
 
 void cache_metadata_entry::print() {
-  log << "image_id=" << image_id
+  std::stringstream ss;
+  ss << "image_id=" << image_id
     << ", object_id=" << object_id
     << ", index=" << index
     << ", valid_bit=" << valid_bit
@@ -100,6 +105,7 @@ void cache_metadata_entry::print() {
     << ", lru_next=" << lru_next
     << ", prev=" << prev
     << ", next=" << next << endl;
+  debug(ss.str());
 }
 
 int write_superblock(int fd, char* buf, size_t len) {
