@@ -46,17 +46,6 @@ void superblock::print() {
     << ", data_len=" << data_len << "sec." << endl;
 }
 
-cache_metadata_set::cache_metadata_set(cache_metadata_set* _cms) {
-  set_id = _cms->set_id;
-  lru_head = _cms->lru_head;
-  lru_tail = _cms->lru_tail;
-  invalid_head = _cms->invalid_head;
-  PBA_begin = _cms->PBA_begin;
-  PBA_end = _cms->PBA_end;
-  checksum = _cms->checksum;
-  unclean = _cms->unclean;
-}
-
 cache_metadata_set::cache_metadata_set(int _set_id) {
   set_id = _set_id;
   lru_head = CACHE_NULL, lru_tail = CACHE_NULL;
