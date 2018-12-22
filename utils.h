@@ -20,6 +20,7 @@
 
 #ifndef UTILS_H
 #define UTILS_H
+
 #include "common.h"
 
 void usage(string pname) {
@@ -103,13 +104,5 @@ void print_setup_attributes() {
   log << "\tmetadata length = " << metadata_length << " sectors" << endl;
   log << "\tdata length = " << data_length << " sectors" << endl;
 }
-// Invoked on reset
-/*
-void reset_metadata(int fd) {
-  auto length = cache_set_count + cache_entries
-  char empty_buf[513];
-  std::fill(len, buffer+512, '\0');
-}
-*/
 
 #endif

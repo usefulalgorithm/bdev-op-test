@@ -26,9 +26,8 @@
 // (hashed val of obj name) ===> (location on disk)
 #include "stx/btree_map.h"
 
-#include "utils.h"
 #include "cache.h"
-
+#include "utils.h"
 namespace io = boost::iostreams;
 
 void write_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
@@ -189,13 +188,30 @@ int main(int argc, char* argv[]) {
 #ifdef DEBUG
     sb->print();
 #endif
+    sb->get_attributes();
+
     if (!strlen(sb->device_name)) {
       whine << "No ssd device given. Please reset cache superblock first." << endl;
       exit(EXIT_FAILURE);
     }
-    if (!object_name.length()) {
+    if (!object_name.length() && operation != NOOP) {
       whine << "No object given" << endl;
       exit(EXIT_FAILURE);
+    }
+
+    // retrieve all sets
+    std::vector<cache_metadata_set*> sets;
+    for (int i = 0; i < cache_set_count; i++) {
+#if 1
+      auto md_set = (cache_metadata_set*)malloc(sizeof(cache_metadata_set));
+#else
+      cache_metadata_set* md_set = nullptr;
+#endif
+      if (read_metadata_set(ssd_fd, i, md_set) < 0) {
+        whine << "Cannot read metadata set " << i << ": " << strerror(errno) << endl;
+        exit(EXIT_FAILURE);
+      }
+      sets.push_back(md_set);
     }
     if (operation != NOOP) {
       /*

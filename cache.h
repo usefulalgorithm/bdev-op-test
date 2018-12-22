@@ -39,6 +39,7 @@ struct superblock {
 
   superblock();
   void print();
+  void get_attributes();
 };
 
 struct cache_metadata_set { // size = 1 sector
@@ -50,9 +51,10 @@ struct cache_metadata_set { // size = 1 sector
   uint64_t lru_size; // how many entries are in this set
   uint64_t PBA_begin, PBA_end; // boundaries of PBAs of data managed by this set, in bytes
 
+  cache_metadata_set(cache_metadata_set*);
   cache_metadata_set(int);
   void print();
-};
+}; // __attribute__((aligned(512)));
 
 struct cache_metadata_entry { // size = 1 sector
   bool valid_bit;
@@ -71,5 +73,10 @@ int read_superblock(int fd, char* buf);
 
 int write_metadata_set(int fd, int set_id);
 int reset_metadata_entries(int fd, uint32_t offset);
+#if 1
+int read_metadata_set(int fd, int set_id, cache_metadata_set* md_set);
+#else
+int read_metadata_set(int fd, int set_id, cache_metadata_set*& md_set);
+#endif
 
 #endif

@@ -21,7 +21,7 @@
 #include "common.h"
 
 string   pname                = ""; // program name
-string   ssd_devname          = "/dev/sdf2";     // device name
+string   ssd_devname          = "/dev/sdf4";     // device name
 uint64_t base_size            = 1;
 string   base_size_str        = "B";          // defaults to Bytes
 uint64_t ssd_dev_size         = 0;

@@ -24,9 +24,11 @@
 #include <iostream>
 #include <algorithm>
 #include <string>
+#include <vector>
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
+#include <cassert>
 #include <limits>
 #include <exception>
 #include <experimental/filesystem>
@@ -76,6 +78,7 @@ static const uint16_t max_cache_set_count = std::numeric_limits<uint16_t>::max()
 
 static const uint8_t  superblock_length = 1;
 extern uint64_t       metadata_length;
+static const uint8_t  metadata_set_info_length = 1;
 extern uint64_t       data_length;
 
 // operations
