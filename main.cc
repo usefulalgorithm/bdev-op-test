@@ -202,11 +202,7 @@ int main(int argc, char* argv[]) {
     // retrieve all sets
     std::vector<std::shared_ptr<cache_metadata_set> > sets;
     for (int i = 0; i < cache_set_count; i++) {
-#if 1
       std::shared_ptr<cache_metadata_set> md_set((cache_metadata_set*)malloc(sizeof(cache_metadata_set)), free);
-#else
-      cache_metadata_set* md_set = nullptr;
-#endif
       if (read_metadata_set(ssd_fd, i, md_set) < 0) {
         whine << "Cannot read metadata set " << i << ": " << strerror(errno) << endl;
         exit(EXIT_FAILURE);

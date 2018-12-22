@@ -73,10 +73,6 @@ int read_superblock(int fd, char* buf);
 
 int write_metadata_set(int fd, int set_id);
 int reset_metadata_entries(int fd, uint32_t offset);
-#if 1
 int read_metadata_set(int fd, int set_id, std::shared_ptr<cache_metadata_set> md_set);
-#else
-int read_metadata_set(int fd, int set_id, cache_metadata_set*& md_set);
-#endif
 
 #endif
