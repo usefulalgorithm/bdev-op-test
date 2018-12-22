@@ -169,12 +169,12 @@ int reset_metadata_entries(int fd, uint32_t start) {
 }
 
 #if 1
-int read_metadata_set(int fd, int set_id, cache_metadata_set* md_set) {
+int read_metadata_set(int fd, int set_id, std::shared_ptr<cache_metadata_set> md_set) {
   auto offset = superblock_length + set_id * (1 + cache_associativity); // in sectors
   offset *= ssd_sector_size; // now offset is in bytes
   lseek(fd, offset, SEEK_SET);
   int ret = 0;
-  ret = read(fd, reinterpret_cast<char*>(md_set), sizeof(cache_metadata_set));
+  ret = read(fd, reinterpret_cast<char*>(md_set.get()), sizeof(cache_metadata_set));
   if (ret < 0)
     return ret;
   return 0;

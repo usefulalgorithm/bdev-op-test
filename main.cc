@@ -200,10 +200,10 @@ int main(int argc, char* argv[]) {
     }
 
     // retrieve all sets
-    std::vector<cache_metadata_set*> sets;
+    std::vector<std::shared_ptr<cache_metadata_set> > sets;
     for (int i = 0; i < cache_set_count; i++) {
 #if 1
-      auto md_set = (cache_metadata_set*)malloc(sizeof(cache_metadata_set));
+      std::shared_ptr<cache_metadata_set> md_set((cache_metadata_set*)malloc(sizeof(cache_metadata_set)), free);
 #else
       cache_metadata_set* md_set = nullptr;
 #endif
@@ -213,6 +213,10 @@ int main(int argc, char* argv[]) {
       }
       sets.push_back(md_set);
     }
+#ifdef DEBUG
+    for (auto i : sets)
+      i->print();
+#endif
     if (operation != NOOP) {
       /*
       // restore b+ tree here
