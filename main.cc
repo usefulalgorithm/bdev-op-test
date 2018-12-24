@@ -208,14 +208,12 @@ int main(int argc, char* argv[]) {
       // hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
 
       boost::filesystem::path object_path(object_name);
-      std::vector<string> object_info;
-      boost::split(object_info, object_path.filename().string(), [] (char c) { return c == '.'; });
+      std::vector<string> v;
+      boost::split(v, object_path.filename().string(), [] (char c) { return c == '.'; });
 
-      string pool_name  = object_info[0];
-      string image_name = object_info[1];
-      string object_id  = object_info[2];
+      std::shared_ptr<cache_object> obj(new cache_object {v[0], v[1], v[2]});
 
-      int set_id = std::stoi(object_id) % cache_set_count;
+      int set_id = std::stoi(obj->object_id) % cache_set_count;
       // the actual location on disk
       sector_t offset = 0;
       // the metadata set

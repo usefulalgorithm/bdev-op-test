@@ -94,4 +94,12 @@ extern uint64_t       data_length;
 extern bool reset;
 extern bool wipe_superblock;
 
+// data structures
+
+struct cache_object {
+  string pool_name;
+  string image_name;
+  string object_id;
+};
+
 #endif
