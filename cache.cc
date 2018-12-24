@@ -76,37 +76,59 @@ void superblock::get_attributes() {
 }
 
 void cache_metadata_set::print() {
-  auto check_if_null = [] (uint32_t x) {
-    if (x == 0xFFFFFFFF)
-      return std::string("NULL");
-    else
-      return std::to_string(x);
-  };
   std::stringstream ss;
   ss << "set_id=" << int(set_id)
-    << ", lru_head=" << std::hex << check_if_null(lru_head)
-    << ", lru_tail=" << check_if_null(lru_tail)
-    << ", invalid_head=" << check_if_null(invalid_head)
-    << ", PBA_begin=" << PBA_begin << "B"
+    << ", lru_head=" << ::check_if_null(lru_head)
+    << ", lru_tail=" << ::check_if_null(lru_tail)
+    << ", invalid_head=" << ::check_if_null(invalid_head)
+    << ", PBA_begin=" << std::hex << PBA_begin << "B"
     << ", PBA_end=" << PBA_end << "B"
     << ", checksum=" << std::dec << checksum
     << ", unclean=" << unclean << endl;
   debug(ss.str());
 }
 
+int cache_metadata_set::insert(std::shared_ptr<cache_metadata_entry> entry) {
+  return 0;
+}
+
+int cache_metadata_set::lookup(std::shared_ptr<cache_metadata_entry> entry) {
+  return 0;
+}
+
+int cache_metadata_set::evict(std::shared_ptr<cache_metadata_entry> entry) {
+  return 0;
+}
+
 void cache_metadata_entry::print() {
   std::stringstream ss;
-  ss << "image_id=" << image_id
+  ss << "pool_id=" << pool_id
+    << ", image_id=" << image_id
     << ", object_id=" << object_id
     << ", index=" << index
-    << ", valid_bit=" << valid_bit
-    << ", PBA=" << PBA << "B"
-    << ", lru_prev=" << lru_prev
-    << ", lru_next=" << lru_next
-    << ", prev=" << prev
-    << ", next=" << next << endl;
+    << ", valid_bit=" << (valid_bit ? "VALID" : "INVALID")
+    << ", PBA=" << std::hex << PBA << "B"
+    << ", lru_prev=" << std::dec << check_if_null(lru_prev)
+    << ", lru_next=" << check_if_null(lru_next)
+    << ", prev=" << check_if_null(prev)
+    << ", next=" << check_if_null(next) << endl;
   debug(ss.str());
 }
+
+void cache_metadata_entry::initialize(std::vector<string> v) {
+  //XXX: actually, these fields *SHOULD* be integers when we get an object
+  pool_id = SpookyHash::Hash32(v[0].c_str(), v[0].length(), SEED);
+  image_id = SpookyHash::Hash32(v[1].c_str(), v[1].length(), SEED);
+  object_id = std::stoul(v[2]);
+  lru_prev = lru_next = prev = next = CACHE_NULL;
+}
+
+
+/*****************************************************
+ *
+ *  Global functions
+ *
+ *****************************************************/
 
 int write_superblock(int fd, char* buf, size_t len) {
   // TODO are there other ways to do this?

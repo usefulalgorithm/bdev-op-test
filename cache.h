@@ -22,6 +22,7 @@
 #define CACHE_H
 
 #include "common.h"
+#include "utils.h"
 
 struct superblock {
   char device_name[DEV_PATHLEN]; // TODO: use uuid
@@ -42,6 +43,20 @@ struct superblock {
   void get_attributes();
 };
 
+struct cache_metadata_entry { // size = 1/4 sector
+  bool valid_bit;
+  hash_t pool_id;
+  hash_t image_id;
+  hash_t object_id;
+  uint32_t index; // which sector is this entry on
+  uint32_t lru_prev, lru_next; // these denote neighboring LRU entries
+  uint32_t prev, next; // these denote neighboring available entries in set
+  uint64_t PBA; // physical block address of data chunk
+
+  void print();
+  void initialize(std::vector<string>);
+};
+
 struct cache_metadata_set { // size = 1 sector
   uint8_t set_id;
   bool unclean; // set if metadata and data are mismatched
@@ -51,22 +66,13 @@ struct cache_metadata_set { // size = 1 sector
   uint64_t lru_size; // how many entries are in this set
   uint64_t PBA_begin, PBA_end; // boundaries of PBAs of data managed by this set, in bytes
 
-  cache_metadata_set(cache_metadata_set*);
   cache_metadata_set(int);
   void print();
+
+  int insert(std::shared_ptr<cache_metadata_entry>);
+  int lookup(std::shared_ptr<cache_metadata_entry>);
+  int evict(std::shared_ptr<cache_metadata_entry>);
 }; // __attribute__((packed));
-
-struct cache_metadata_entry { // size = 1/4 sector
-  bool valid_bit;
-  char image_id[16];
-  char object_id[16];
-  uint32_t index; // which sector is this entry on
-  uint32_t lru_prev, lru_next; // these denote neighboring LRU entries
-  uint32_t prev, next; // these denote neighboring available entries in set
-  uint64_t PBA; // physical block address of data chunk
-
-  void print();
-};
 
 int write_superblock(int fd, char* buf, size_t len);
 int read_superblock(int fd, char* buf);

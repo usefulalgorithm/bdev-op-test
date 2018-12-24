@@ -39,6 +39,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/split.hpp>
 
+#include "SpookyV2.h"
+
 using std::string;
 using std::cout;
 using std::cerr;
@@ -95,11 +97,5 @@ extern bool reset;
 extern bool wipe_superblock;
 
 // data structures
-
-struct cache_object {
-  string pool_name;
-  string image_name;
-  string object_id;
-};
 
 #endif

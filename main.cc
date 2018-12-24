@@ -21,13 +21,11 @@
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#include "SpookyV2.h"
 // use map to store location of the data
 // (hashed val of obj name) ===> (location on disk)
 #include "stx/btree_map.h"
 
 #include "cache.h"
-#include "utils.h"
 namespace io = boost::iostreams;
 
 void write_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
@@ -204,16 +202,15 @@ int main(int argc, char* argv[]) {
     //for (auto i : sets) i->print();
 
     if (operation != NOOP) {
-      // XXX don't really need the hash here... just gotta split the object name
-      // hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
-
       boost::filesystem::path object_path(object_name);
       std::vector<string> v;
       boost::split(v, object_path.filename().string(), [] (char c) { return c == '.'; });
 
-      std::shared_ptr<cache_object> obj(new cache_object {v[0], v[1], v[2]});
+      std::shared_ptr<cache_metadata_entry> entry(new cache_metadata_entry);
+      entry->initialize(v);
+      entry->print();
 
-      int set_id = std::stoi(obj->object_id) % cache_set_count;
+      auto set_id = entry->object_id % cache_set_count;
       // the actual location on disk
       sector_t offset = 0;
       // the metadata set
@@ -226,6 +223,10 @@ int main(int argc, char* argv[]) {
             // check if object exists
             if (!boost::filesystem::exists(object_path)) {
               whine << object_path << " does not exist" << endl;
+              exit(EXIT_FAILURE);
+            }
+            if (cache_set->insert(entry)) {
+              whine << "Failed to insert " << object_path << endl;
               exit(EXIT_FAILURE);
             }
             // TODO write data onto disk
