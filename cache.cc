@@ -88,12 +88,35 @@ void cache_metadata_set::print() {
   debug(ss.str());
 }
 
+// returns 0 on success
+//         1 if object already in cache
+//         -1 on error
 int cache_metadata_set::insert(std::shared_ptr<cache_metadata_entry> entry) {
+  size_t pos = 0;
+  if (lookup(entry, pos) > 0)
+    return 1;
   return 0;
 }
 
-int cache_metadata_set::lookup(std::shared_ptr<cache_metadata_entry> entry) {
-  return 0;
+// returns 0 if not found
+//         1 if found
+//         -1 on error
+//
+// pos is the index in the linked list
+int cache_metadata_set::lookup(std::shared_ptr<cache_metadata_entry> entry, size_t& pos) {
+  int ret = 0;
+  auto cur = lru_head;
+  while (cur != CACHE_NULL) {
+    /*
+    std::shared_ptr<cache_metadata_entry> e((cache_metadata_entry*)malloc(sizeof(cache_metadata_entry)), free);
+    read_metadata_entry(STUFF_LIKE(ssd_sector_size*(cur+offset)), reinterpret_case<char*>(e), sizeof(cache_metadata_entry));
+    if (e->offset == entry->offset)
+      return 1;
+    cur = e->lru_next;
+     */
+  }
+
+  return ret;
 }
 
 int cache_metadata_set::evict(std::shared_ptr<cache_metadata_entry> entry) {
@@ -105,7 +128,7 @@ void cache_metadata_entry::print() {
   ss << "pool_id=" << pool_id
     << ", image_id=" << image_id
     << ", object_id=" << object_id
-    << ", index=" << index
+    << ", offset=" << offset
     << ", valid_bit=" << (valid_bit ? "VALID" : "INVALID")
     << ", PBA=" << std::hex << PBA << "B"
     << ", lru_prev=" << std::dec << check_if_null(lru_prev)

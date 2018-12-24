@@ -225,7 +225,7 @@ int main(int argc, char* argv[]) {
               whine << object_path << " does not exist" << endl;
               exit(EXIT_FAILURE);
             }
-            if (cache_set->insert(entry)) {
+            if (cache_set->insert(entry) < 0) {
               whine << "Failed to insert " << object_path << endl;
               exit(EXIT_FAILURE);
             }
