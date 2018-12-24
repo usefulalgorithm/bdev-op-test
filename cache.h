@@ -56,7 +56,7 @@ struct cache_metadata_set { // size = 1 sector
   void print();
 }; // __attribute__((packed));
 
-struct cache_metadata_entry { // size = 1 sector
+struct cache_metadata_entry { // size = 1/4 sector
   bool valid_bit;
   char image_id[16];
   char object_id[16];

@@ -2,7 +2,7 @@ CC = g++
 INCLUDE = ./include
 CCFLAGS = -g -O3 -std=c++11
 LDFLAGS += -Wl,-rpath=./lib -L./lib
-LIBS = -lstdc++fs -lboost_iostreams
+LIBS = -lboost_iostreams -lboost_filesystem
 DEPS = SpookyV2.h common.h utils.h cache.h
 OBJ = SpookyV2.o common.o cache.o main.o
 TARGET = bdev-op-test

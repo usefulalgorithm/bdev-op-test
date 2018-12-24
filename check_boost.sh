@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PKG_ROOT=$PWD
-TARGETS="iostreams"
+TARGETS="iostreams filesystem"
 BOOST_VERSION_NUM="1.69.0"
 BOOST_VERSION_STR="1_69_0"
 BOOST_NAME=boost_$BOOST_VERSION_STR

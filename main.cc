@@ -150,7 +150,7 @@ int main(int argc, char* argv[]) {
   if (reset) {
     get_attributes_from_dev(ssd_fd);
     print_setup_attributes();
-    
+
     // reset the attributes in the superblock
     struct superblock* sb = new superblock();
 
@@ -201,21 +201,33 @@ int main(int argc, char* argv[]) {
     }
 
     // debug: print sets
-    for (auto i : sets)
-      i->print();
+    //for (auto i : sets) i->print();
 
     if (operation != NOOP) {
-      hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
-      debug("hashed=" + std::to_string(hashed));
+      // XXX don't really need the hash here... just gotta split the object name
+      // hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
+
+      boost::filesystem::path object_path(object_name);
+      std::vector<string> object_info;
+      boost::split(object_info, object_path.filename().string(), [] (char c) { return c == '.'; });
+
+      string pool_name  = object_info[0];
+      string image_name = object_info[1];
+      string object_id  = object_info[2];
+
+      int set_id = std::stoi(object_id) % cache_set_count;
       // the actual location on disk
-      sector_t sector = 0;
+      sector_t offset = 0;
+      // the metadata set
+      auto cache_set = sets[set_id];
+      cache_set->print();
 
       switch (operation) {
         case PUT:
           {
             // check if object exists
-            if (!std::experimental::filesystem::exists(object_name)) {
-              whine << object_name << " does not exist" << endl;
+            if (!boost::filesystem::exists(object_path)) {
+              whine << object_path << " does not exist" << endl;
               exit(EXIT_FAILURE);
             }
             // TODO write data onto disk
