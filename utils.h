@@ -44,7 +44,7 @@ void set_set_count() {
 }
 
 uint64_t get_max_cache_entries() {
-  return (ssd_dev_size - 1 - cache_set_count) / (cache_obj_size + 1);
+  return 4*(ssd_dev_size - 1 - cache_set_count) / (4*cache_obj_size + 1);
 }
 
 void get_parts_lengths() {
@@ -53,9 +53,9 @@ void get_parts_lengths() {
   // 1. superblock
   //  already set
   // 2. metadata
-  metadata_length = cache_set_count * (1 + cache_associativity);
+  metadata_length = cache_set_count * (1 + cache_associativity/4);
   // 3. data
-  data_length = ssd_dev_size - metadata_length;
+  data_length = cache_obj_size * cache_entries;
 }
 
 void get_attributes_from_dev(int fd) {
@@ -75,6 +75,10 @@ void get_attributes_from_dev(int fd) {
   if (cache_associativity == 0) // did not specify associativity, assume fully associated
     cache_associativity = cache_entries;
   assert(cache_associativity > 1);
+  if (cache_associativity % 4) {
+    whine << "Cache associativity has to be multiple of 4 for alignment purposes" << endl;
+    exit(EXIT_FAILURE);
+  }
   set_set_count();
 
   if (cache_set_count > max_cache_set_count) {

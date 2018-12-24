@@ -199,8 +199,11 @@ int main(int argc, char* argv[]) {
       }
       sets.push_back(md_set);
     }
+
+    // debug: print sets
     for (auto i : sets)
       i->print();
+
     if (operation != NOOP) {
       hash_t hashed = SpookyHash::Hash32(object_name.c_str(), object_name.length(), SEED);
       debug("hashed=" + std::to_string(hashed));
