@@ -84,6 +84,10 @@ extern uint16_t cache_set_count;
 
 static const uint16_t max_cache_set_count = std::numeric_limits<uint16_t>::max();
 
+// file descriptor
+
+extern int ssd_fd;
+
 // lengths
 
 static const uint8_t  superblock_length = 1;

@@ -74,11 +74,11 @@ struct cache_metadata_set { // size = 1 sector
   int evict(std::shared_ptr<cache_metadata_entry>);
 }; // __attribute__((packed));
 
-int write_superblock(int fd, char* buf, size_t len);
-int read_superblock(int fd, char* buf);
+int write_superblock(char* buf, size_t len);
+int read_superblock(char* buf);
 
-int write_metadata_set(int fd, int set_id);
-int reset_metadata_entries(int fd, uint32_t offset);
-int read_metadata_set(int fd, int set_id, std::shared_ptr<cache_metadata_set> md_set);
+int write_metadata_set(int set_id);
+int reset_metadata_entries(uint32_t offset);
+int read_metadata_set(int set_id, std::shared_ptr<cache_metadata_set> md_set);
 
 #endif

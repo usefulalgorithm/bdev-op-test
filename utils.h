@@ -33,7 +33,7 @@ uint64_t get_max_cache_entries();
 
 void get_parts_lengths();
 
-void get_attributes_from_dev(int);
+void get_attributes_from_dev();
 
 void print_setup_attributes();
 #endif

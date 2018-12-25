@@ -32,6 +32,8 @@ uint64_t cache_entries        = 0;
 uint64_t cache_associativity  = 0;
 uint16_t cache_set_count      = 0;
 
+int ssd_fd = 0;
+
 uint64_t metadata_length      = 0;
 uint64_t data_length          = 0;
 

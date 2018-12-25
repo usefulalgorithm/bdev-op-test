@@ -50,7 +50,7 @@ void read_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
 int main(int argc, char* argv[]) {
   pname = argv[0];
   // default ssd location
-  int opt, ssd_fd;
+  int opt;
   uint8_t operation = NOOP;
   string object_name;
   while ((opt = getopt(argc, argv, "s:GMKn:ra:Wh?p:g:e:")) != -1) {
@@ -146,13 +146,13 @@ int main(int argc, char* argv[]) {
 
   // get ssd and cache infos, then overwrite ssd superblock
   if (reset) {
-    get_attributes_from_dev(ssd_fd);
+    get_attributes_from_dev();
     print_setup_attributes();
 
     // reset the attributes in the superblock
     struct superblock* sb = new superblock();
 
-    if (write_superblock(ssd_fd, (char*)sb, sizeof(struct superblock)) < 0) {
+    if (write_superblock((char*)sb, sizeof(struct superblock)) < 0) {
       whine << "Cannot reset ssd superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
     }
@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
 
     // reset all sets
     for (int i = 0; i < cache_set_count; i++) {
-      if (write_metadata_set(ssd_fd, i) < 0) {
+      if (write_metadata_set(i) < 0) {
         whine << "Cannot reset metadata set " << i << ": " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
       }
@@ -170,7 +170,7 @@ int main(int argc, char* argv[]) {
   // read existing superblock
   else {
     char sb_buffer[512];
-    if (read_superblock(ssd_fd, sb_buffer) < 0) {
+    if (read_superblock(sb_buffer) < 0) {
       whine << "Cannot read SSD superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
     }
@@ -191,7 +191,7 @@ int main(int argc, char* argv[]) {
     std::vector<std::shared_ptr<cache_metadata_set> > sets;
     for (int i = 0; i < cache_set_count; i++) {
       std::shared_ptr<cache_metadata_set> md_set((cache_metadata_set*)malloc(sizeof(cache_metadata_set)), free);
-      if (read_metadata_set(ssd_fd, i, md_set) < 0) {
+      if (read_metadata_set(i, md_set) < 0) {
         whine << "Cannot read metadata set " << i << ": " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
       }

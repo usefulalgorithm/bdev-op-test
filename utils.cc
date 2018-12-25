@@ -62,12 +62,12 @@ void get_parts_lengths() {
   data_length = cache_obj_size * cache_entries;
 }
 
-void get_attributes_from_dev(int fd) {
-  if (ioctl(fd, BLKGETSIZE, &ssd_dev_size) < 0) {
+void get_attributes_from_dev() {
+  if (ioctl(ssd_fd, BLKGETSIZE, &ssd_dev_size) < 0) {
     whine << "Cannot get SSD device size: " << strerror(errno) << endl;
     exit(EXIT_FAILURE);
   }
-  if (ioctl(fd, BLKSSZGET, &ssd_sector_size) < 0) {
+  if (ioctl(ssd_fd, BLKSSZGET, &ssd_sector_size) < 0) {
     whine << "Cannot get SSD sector size: " << strerror(errno) << endl;
     exit(EXIT_FAILURE);
   }

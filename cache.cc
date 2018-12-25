@@ -95,6 +95,20 @@ int cache_metadata_set::insert(std::shared_ptr<cache_metadata_entry> entry) {
   size_t pos = 0;
   if (lookup(entry, pos) > 0)
     return 1;
+  entry->offset = superblock_length
+    + set_id * (metadata_set_info_length + cache_associativity/4)
+    + metadata_set_info_length + pos;
+  if (lru_head == CACHE_NULL) {
+    lru_head = entry->offset;
+    assert(lru_tail == CACHE_NULL);
+    lru_tail = entry->offset;
+    entry->PBA = PBA_begin;
+    entry->valid_bit = true;
+  }
+  else {
+    // TODO
+  }
+  entry->print();
   return 0;
 }
 
@@ -153,17 +167,17 @@ void cache_metadata_entry::initialize(std::vector<string> v) {
  *
  *****************************************************/
 
-int write_superblock(int fd, char* buf, size_t len) {
+int write_superblock(char* buf, size_t len) {
   // TODO are there other ways to do this?
-  return write(fd, buf, len);
+  return write(ssd_fd, buf, len);
 }
 
-int read_superblock(int fd, char* buf) {
+int read_superblock(char* buf) {
   // TODO are there other ways to do this?
-  return read(fd, buf, 512);
+  return read(ssd_fd, buf, 512);
 }
 
-int write_metadata_set(int fd, int set_id) {
+int write_metadata_set(int set_id) {
   // get metadata set offset
   //
   // cache_associativity = number of entries in a set
@@ -180,9 +194,9 @@ int write_metadata_set(int fd, int set_id) {
   auto md_set = new cache_metadata_set(set_id);
   int ret = 0;
   if (reset) {
-    lseek(fd, offset, SEEK_SET);
-    write(fd, (char*)md_set, ssd_sector_size);
-    ret = reset_metadata_entries(fd, offset+ 1*ssd_sector_size);
+    lseek(ssd_fd, offset, SEEK_SET);
+    write(ssd_fd, (char*)md_set, ssd_sector_size);
+    ret = reset_metadata_entries(offset+ 1*ssd_sector_size);
   }
   else {
     // TODO partially update metadata
@@ -191,23 +205,23 @@ int write_metadata_set(int fd, int set_id) {
   return ret;
 }
 
-int reset_metadata_entries(int fd, uint32_t start) {
+int reset_metadata_entries(uint32_t start) {
   if (reset) {
-    lseek(fd, start, SEEK_SET);
+    lseek(ssd_fd, start, SEEK_SET);
     auto len = ssd_sector_size * cache_associativity/4; // in bytes
     char buf[len];
     std::fill(buf, buf+len, '\0');
-    return write(fd, buf, len);
+    return write(ssd_fd, buf, len);
   }
   return 0;
 }
 
-int read_metadata_set(int fd, int set_id, std::shared_ptr<cache_metadata_set> md_set) {
+int read_metadata_set(int set_id, std::shared_ptr<cache_metadata_set> md_set) {
   auto offset = superblock_length + set_id * (1 + cache_associativity/4); // in sectors
   offset *= ssd_sector_size; // now offset is in bytes
-  lseek(fd, offset, SEEK_SET);
+  lseek(ssd_fd, offset, SEEK_SET);
   int ret = 0;
-  ret = read(fd, reinterpret_cast<char*>(md_set.get()), sizeof(cache_metadata_set));
+  ret = read(ssd_fd, reinterpret_cast<char*>(md_set.get()), sizeof(cache_metadata_set));
   if (ret < 0)
     return ret;
   return 0;
