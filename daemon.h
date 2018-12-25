@@ -27,6 +27,8 @@ struct cache_daemon {
   std::shared_ptr<superblock> sb;
   std::vector<std::shared_ptr<cache_metadata_set> > sets;
   std::vector<std::shared_ptr<cache_metadata_entry> > entries;
+
+  void initialize();
 };
 
 #endif

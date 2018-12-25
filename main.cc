@@ -168,45 +168,16 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  // read existing superblock
   else {
 
     // initialize daemon
     std::shared_ptr<cache_daemon> daemon(new cache_daemon);
+    daemon->initialize();
 
-    daemon->sb = std::make_shared<superblock>();
-
-    if (read_superblock(reinterpret_cast<char*>(daemon->sb.get())) < 0) {
-      whine << "Cannot read SSD superblock " << ssd_devname << ": " << strerror(errno) << endl;
-      exit(EXIT_FAILURE);
-    }
-    daemon->sb->print();
-    daemon->sb->get_attributes();
-
-    if (!strlen(daemon->sb->device_name)) {
-      whine << "No ssd device given. Please reset cache superblock first." << endl;
-      exit(EXIT_FAILURE);
-    }
     if (!object_name.length() && operation != NOOP) {
       whine << "No object given" << endl;
       exit(EXIT_FAILURE);
     }
-
-
-    // retrieve all sets
-    std::vector<std::shared_ptr<cache_metadata_set> > sets;
-    for (int i = 0; i < cache_set_count; i++) {
-      std::shared_ptr<cache_metadata_set> md_set((cache_metadata_set*)malloc(sizeof(cache_metadata_set)), free);
-      if (read_metadata_set(i, md_set) < 0) {
-        whine << "Cannot read metadata set " << i << ": " << strerror(errno) << endl;
-        exit(EXIT_FAILURE);
-      }
-      sets.push_back(md_set);
-    }
-
-    // debug: print sets
-    //for (auto i : sets) i->print();
-    daemon->sets = std::move(sets);
 
     if (operation != NOOP) {
       boost::filesystem::path object_path(object_name);
