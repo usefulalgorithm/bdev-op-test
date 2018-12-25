@@ -197,7 +197,7 @@ int write_metadata_set(int set_id) {
   int ret = 0;
   if (reset) {
     lseek(ssd_fd, offset, SEEK_SET);
-    write(ssd_fd, (char*)md_set, ssd_sector_size);
+    write(ssd_fd, (char*)md_set, sizeof(cache_metadata_set));
     ret = reset_metadata_entries(offset+ 1*ssd_sector_size);
   }
   else {
