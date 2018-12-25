@@ -158,6 +158,8 @@ void cache_metadata_entry::initialize(std::vector<string> v) {
   image_id = SpookyHash::Hash32(v[1].c_str(), v[1].length(), SEED);
   object_id = std::stoul(v[2]);
   lru_prev = lru_next = prev = next = CACHE_NULL;
+  offset = PBA = 0;
+  valid_bit = false;
 }
 
 
@@ -174,7 +176,7 @@ int write_superblock(char* buf, size_t len) {
 
 int read_superblock(char* buf) {
   // TODO are there other ways to do this?
-  return read(ssd_fd, buf, 512);
+  return read(ssd_fd, buf, sizeof(superblock));
 }
 
 int write_metadata_set(int set_id) {

@@ -26,6 +26,7 @@
 #include "stx/btree_map.h"
 
 #include "cache.h"
+#include "daemon.h"
 namespace io = boost::iostreams;
 
 void write_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
@@ -169,16 +170,20 @@ int main(int argc, char* argv[]) {
 
   // read existing superblock
   else {
-    char sb_buffer[512];
-    if (read_superblock(sb_buffer) < 0) {
+
+    // initialize daemon
+    std::shared_ptr<cache_daemon> daemon(new cache_daemon);
+
+    daemon->sb = std::make_shared<superblock>();
+
+    if (read_superblock(reinterpret_cast<char*>(daemon->sb.get())) < 0) {
       whine << "Cannot read SSD superblock " << ssd_devname << ": " << strerror(errno) << endl;
       exit(EXIT_FAILURE);
     }
-    struct superblock* sb = (struct superblock*)sb_buffer;
-    sb->print();
-    sb->get_attributes();
+    daemon->sb->print();
+    daemon->sb->get_attributes();
 
-    if (!strlen(sb->device_name)) {
+    if (!strlen(daemon->sb->device_name)) {
       whine << "No ssd device given. Please reset cache superblock first." << endl;
       exit(EXIT_FAILURE);
     }
@@ -186,6 +191,7 @@ int main(int argc, char* argv[]) {
       whine << "No object given" << endl;
       exit(EXIT_FAILURE);
     }
+
 
     // retrieve all sets
     std::vector<std::shared_ptr<cache_metadata_set> > sets;
@@ -200,6 +206,7 @@ int main(int argc, char* argv[]) {
 
     // debug: print sets
     //for (auto i : sets) i->print();
+    daemon->sets = std::move(sets);
 
     if (operation != NOOP) {
       boost::filesystem::path object_path(object_name);
@@ -214,7 +221,7 @@ int main(int argc, char* argv[]) {
       // the actual location on disk
       sector_t offset = 0;
       // the metadata set
-      auto cache_set = sets[set_id];
+      auto cache_set = daemon->sets[set_id];
       cache_set->print();
 
       switch (operation) {
