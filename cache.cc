@@ -157,7 +157,7 @@ int cache_metadata_set::lookup(std::shared_ptr<cache_daemon> daemon,
 
 // return 0 on success
 //        1 if not found
-int cache_metadata_set::retrieve(std::shared_ptr<cache_daemon> daemon, std::shared_ptr<cache_metadata_entry> entry) {
+int cache_metadata_set::retrieve(std::shared_ptr<cache_daemon> daemon, std::shared_ptr<cache_metadata_entry>& entry) {
   size_t pos = 0;
   uint32_t index = CACHE_NULL;
   if (lookup(daemon, entry, pos, index) == 0) // if not found, return
@@ -184,6 +184,7 @@ int cache_metadata_set::retrieve(std::shared_ptr<cache_daemon> daemon, std::shar
     write_metadata_entry(daemon->entries[index]);
     lru_head = index;
   }
+  entry = daemon->entries[index];
   return 0;
 }
 
@@ -290,7 +291,6 @@ int write_metadata_entry(std::shared_ptr<cache_metadata_entry> md_entry) {
   offset *= ssd_sector_size;
   offset /= 4;
   offset += ssd_sector_size * (superblock_length + md_entry->index/cache_associativity + 1);
-  debug(offset);
   lseek(ssd_fd, offset, SEEK_SET);
   int ret = 0;
   ret = write(ssd_fd, reinterpret_cast<char*>(md_entry.get()), sizeof(cache_metadata_entry));

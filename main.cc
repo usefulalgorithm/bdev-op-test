@@ -18,35 +18,8 @@
  *  along with bdev-op-test.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <boost/iostreams/device/file_descriptor.hpp>
-#include <boost/iostreams/stream.hpp>
-
-// use map to store location of the data
-// (hashed val of obj name) ===> (location on disk)
-#include "stx/btree_map.h"
-
 #include "cache.h"
 #include "daemon.h"
-namespace io = boost::iostreams;
-
-void write_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
-  lseek(fd, 512, SEEK_SET);
-  io::file_descriptor_sink fds(fd, io::never_close_handle);
-  io::stream_buffer<io::file_descriptor_sink> sb(fds);
-  std::ostream os(&sb);
-  bmap.dump(os);
-}
-
-void read_btree(int fd, stx::btree_map<hash_t, sector_t>& bmap) {
-  lseek(fd, 512, SEEK_SET);
-  io::file_descriptor_source fds(fd, io::never_close_handle);
-  io::stream_buffer<io::file_descriptor_source> sb(fds);
-  std::istream is(&sb);
-  if (!bmap.restore(is)) {
-    whine << "Cannot restore b+ tree" << endl;
-    exit(EXIT_FAILURE);
-  }
-}
 
 int main(int argc, char* argv[]) {
   pname = argv[0];
@@ -225,6 +198,7 @@ int main(int argc, char* argv[]) {
               whine << "Failed to get " << object_path << endl;
               exit(EXIT_FAILURE);
             }
+            // TODO: now, entry is the result of our query!
             break;
           }
         case EVICT:
@@ -250,7 +224,7 @@ int main(int argc, char* argv[]) {
       log << "no op" << endl;
     }
     // for debugging
-    daemon->print();
+    //daemon->print();
   }
 
   if (close(ssd_fd) < 0) {
