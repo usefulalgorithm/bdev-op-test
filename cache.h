@@ -24,6 +24,8 @@
 #include "common.h"
 #include "utils.h"
 
+struct cache_daemon;
+
 struct superblock {
   char device_name[DEV_PATHLEN]; // TODO: use uuid
   uint16_t sets;
@@ -69,16 +71,20 @@ struct cache_metadata_set { // size = 1 sector
   cache_metadata_set(int);
   void print();
 
-  int insert(std::shared_ptr<cache_metadata_entry>);
-  int lookup(std::shared_ptr<cache_metadata_entry>, size_t&);
+  int insert(std::shared_ptr<cache_daemon>, std::shared_ptr<cache_metadata_entry>);
+  int lookup(std::shared_ptr<cache_daemon>, std::shared_ptr<cache_metadata_entry>, size_t&);
   int evict(std::shared_ptr<cache_metadata_entry>);
 }; // __attribute__((packed));
 
 int write_superblock(char* buf, size_t len);
 int read_superblock(char* buf);
 
-int write_metadata_set(int set_id);
+int write_metadata_set(int set_id, std::shared_ptr<cache_metadata_set> md_set);
 int reset_metadata_entries(uint32_t offset);
 int read_metadata_set(int set_id, std::shared_ptr<cache_metadata_set> md_set);
+
+int write_metadata_entry(std::shared_ptr<cache_metadata_entry> md_entry);
+uint32_t get_metadata_entry_offset(std::shared_ptr<cache_metadata_entry> md_entry);
+int read_metadata_entry(uint32_t _offset, std::shared_ptr<cache_metadata_entry> md_entry);
 
 #endif

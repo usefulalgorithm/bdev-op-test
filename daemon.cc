@@ -28,7 +28,6 @@ void cache_daemon::initialize() {
     whine << "Cannot read SSD superblock " << ssd_devname << ": " << strerror(errno) << endl;
     exit(EXIT_FAILURE);
   }
-  sb->print();
   sb->get_attributes();
 
   if (!strlen(sb->device_name)) {
@@ -44,5 +43,35 @@ void cache_daemon::initialize() {
       exit(EXIT_FAILURE);
     }
     sets.push_back(md_set);
+  }
+
+  // metadata set entries
+  entries.resize(cache_set_count * cache_associativity);
+  for (int i = 0; i < cache_set_count; i++) {
+    auto cur = sets[i]->lru_head;
+    while (cur != CACHE_NULL) {
+      std::shared_ptr<cache_metadata_entry> entry(new cache_metadata_entry);
+      read_metadata_entry(cur, entry);
+      auto idx = entry->offset - superblock_length - i -1;
+      cur = entry->lru_next;
+      entries[idx] = std::move(entry);
+    }
+  }
+}
+
+void cache_daemon::print() {
+  debug("===== Superblock =====");
+  sb->print();
+  debug("===== Metadata sets =====");
+  for (size_t i = 0; i < sets.size(); i++) {
+    debug("----- set " + std::to_string(i) + " -----");
+    sets[i]->print();
+    for (size_t j = 0; j < cache_associativity; j++) {
+      auto idx = j+cache_associativity*i;
+      if (entries[idx] != nullptr) {
+        debug("..... entry " + std::to_string(idx) + " .....");
+        entries[idx]->print();
+      }
+    }
   }
 }

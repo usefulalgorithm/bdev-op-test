@@ -161,7 +161,7 @@ int main(int argc, char* argv[]) {
 
     // reset all sets
     for (int i = 0; i < cache_set_count; i++) {
-      if (write_metadata_set(i) < 0) {
+      if (write_metadata_set(i, nullptr) < 0) {
         whine << "Cannot reset metadata set " << i << ": " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
       }
@@ -178,6 +178,7 @@ int main(int argc, char* argv[]) {
       whine << "No object given" << endl;
       exit(EXIT_FAILURE);
     }
+    // for (auto i : daemon->sets) i->print();
 
     if (operation != NOOP) {
       boost::filesystem::path object_path(object_name);
@@ -186,14 +187,12 @@ int main(int argc, char* argv[]) {
 
       std::shared_ptr<cache_metadata_entry> entry(new cache_metadata_entry);
       entry->initialize(v);
-      entry->print();
+      // entry->print();
 
       auto set_id = entry->object_id % cache_set_count;
-      // the actual location on disk
-      sector_t offset = 0;
       // the metadata set
       auto cache_set = daemon->sets[set_id];
-      cache_set->print();
+      // cache_set->print();
 
       switch (operation) {
         case PUT:
@@ -203,11 +202,18 @@ int main(int argc, char* argv[]) {
               whine << object_path << " does not exist" << endl;
               exit(EXIT_FAILURE);
             }
-            if (cache_set->insert(entry) < 0) {
+            int ret = cache_set->insert(daemon, entry);
+            if (ret < 0) {
               whine << "Failed to insert " << object_path << endl;
               exit(EXIT_FAILURE);
             }
-            // TODO write data onto disk
+            if (ret > 0) {
+              whine << object_path << " is already in cache" << endl;
+              exit(EXIT_FAILURE);
+            }
+            auto idx = entry->offset - superblock_length - set_id -1;
+            debug("inserting to daemon->cache[" + std::to_string(idx) + "]");
+            assert(idx < daemon->entries.size());
             break;
           }
         case GET:
@@ -227,13 +233,18 @@ int main(int argc, char* argv[]) {
             break;
           }
       }
-      // TODO update metadata here!
-
+      // update metadata here!
+      if (write_metadata_set(set_id, cache_set) < 0) {
+        whine << "Cannot reset metadata set " << set_id << ": " << strerror(errno) << endl;
+        exit(EXIT_FAILURE);
+      }
     }
     // we're just gonna do nothing
     else {
       log << "no op" << endl;
     }
+    // for debugging
+    daemon->print();
   }
 
   if (close(ssd_fd) < 0) {

@@ -29,6 +29,7 @@ struct cache_daemon {
   std::vector<std::shared_ptr<cache_metadata_entry> > entries;
 
   void initialize();
+  void print();
 };
 
 #endif
