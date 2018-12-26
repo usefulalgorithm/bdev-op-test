@@ -50,7 +50,7 @@ struct cache_metadata_entry { // size = 1/4 sector
   hash_t pool_id;
   hash_t image_id;
   hash_t object_id;
-  uint32_t offset; // which sector is this entry on
+  uint32_t index;
   uint32_t lru_prev, lru_next; // these denote neighboring LRU entries
   uint32_t prev, next; // these denote neighboring available entries in set
   uint64_t PBA; // physical block address of data chunk
@@ -85,6 +85,6 @@ int read_metadata_set(int set_id, std::shared_ptr<cache_metadata_set> md_set);
 
 int write_metadata_entry(std::shared_ptr<cache_metadata_entry> md_entry);
 uint32_t get_metadata_entry_offset(std::shared_ptr<cache_metadata_entry> md_entry);
-int read_metadata_entry(uint32_t _offset, std::shared_ptr<cache_metadata_entry> md_entry);
+int read_metadata_entry(uint32_t index, std::shared_ptr<cache_metadata_entry> md_entry);
 
 #endif

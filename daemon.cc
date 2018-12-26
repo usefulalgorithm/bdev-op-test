@@ -52,7 +52,7 @@ void cache_daemon::initialize() {
     while (cur != CACHE_NULL) {
       std::shared_ptr<cache_metadata_entry> entry(new cache_metadata_entry);
       read_metadata_entry(cur, entry);
-      auto idx = entry->offset - superblock_length - i -1;
+      auto idx = entry->index - superblock_length - i -1;
       cur = entry->lru_next;
       entries[idx] = std::move(entry);
     }

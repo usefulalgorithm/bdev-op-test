@@ -211,7 +211,7 @@ int main(int argc, char* argv[]) {
               whine << object_path << " is already in cache" << endl;
               exit(EXIT_FAILURE);
             }
-            auto idx = entry->offset - superblock_length - set_id -1;
+            auto idx = entry->index;
             debug("inserting to daemon->cache[" + std::to_string(idx) + "]");
             assert(idx < daemon->entries.size());
             break;
@@ -234,10 +234,12 @@ int main(int argc, char* argv[]) {
           }
       }
       // update metadata here!
+      /*
       if (write_metadata_set(set_id, cache_set) < 0) {
         whine << "Cannot reset metadata set " << set_id << ": " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
       }
+      */
     }
     // we're just gonna do nothing
     else {

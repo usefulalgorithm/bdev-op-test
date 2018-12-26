@@ -95,19 +95,17 @@ void cache_metadata_set::print() {
 //         -1 on error
 int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared_ptr<cache_metadata_entry> entry) {
   size_t pos = 0;
-  entry->offset = superblock_length
-    + set_id * (metadata_set_info_length + cache_associativity/4)
-    + metadata_set_info_length;
+  entry->index = set_id * cache_associativity;
   if (lookup(daemon, entry, pos) > 0)
     return 1;
   debug("pos=" + std::to_string(pos));
-  entry->offset += pos; // XXX: ???
-  debug(entry->offset);
+  entry->index += pos; // XXX: ???
+  debug("entry->index=" + std::to_string(entry->index));
   if (lru_head == CACHE_NULL) {
     debug("insert to empty lru");
-    lru_head = entry->offset;
+    lru_head = entry->index;
     assert(lru_tail == CACHE_NULL);
-    lru_tail = entry->offset;
+    lru_tail = entry->index;
     lru_size++;
     entry->PBA = PBA_begin;
     entry->valid_bit = true;
@@ -118,17 +116,17 @@ int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared
     if (lru_size == cache_associativity) {
     }
     // get lru head
-    auto cur_head = daemon->entries[lru_head-superblock_length-set_id-1];
-    lru_head = entry->offset;
-    entry->lru_next = cur_head->offset;
-    cur_head->lru_prev = entry->offset;
-    write_metadata_entry(cur_head);
+    auto cur_head = daemon->entries[lru_head];
+    lru_head = entry->index;
+    entry->lru_next = cur_head->index;
+    cur_head->lru_prev = entry->index;
+    //write_metadata_entry(cur_head);
     lru_size++;
     entry->PBA = PBA_begin+pos*cache_obj_size;
     entry->valid_bit = true;
   }
-  write_metadata_entry(entry);
-  auto idx = entry->offset - superblock_length - set_id -1;
+  //write_metadata_entry(entry);
+  auto idx = entry->index;
   daemon->entries[idx] = std::move(entry);
   return 0;
 }
@@ -142,7 +140,7 @@ int cache_metadata_set::lookup(std::shared_ptr<cache_daemon> daemon, std::shared
   int ret = 0;
   auto cur = lru_head;
   while (cur != CACHE_NULL) {
-    auto idx = cur - superblock_length - set_id -1;
+    auto idx = cur;
     auto cur_entry = daemon->entries[idx];
     if (cur_entry->pool_id == entry->pool_id
         && cur_entry->image_id == entry->image_id
@@ -163,7 +161,7 @@ void cache_metadata_entry::print() {
   ss << "pool_id=" << pool_id
     << ", image_id=" << image_id
     << ", object_id=" << object_id
-    << ", offset=" << offset
+    << ", index=" << index
     << ", valid_bit=" << (valid_bit ? "VALID" : "INVALID")
     << ", PBA=" << std::hex << PBA << "B"
     << ", lru_prev=" << std::dec << check_if_null(lru_prev)
@@ -179,7 +177,8 @@ void cache_metadata_entry::initialize(std::vector<string> v) {
   image_id = SpookyHash::Hash32(v[1].c_str(), v[1].length(), SEED);
   object_id = std::stoul(v[2]);
   lru_prev = lru_next = prev = next = CACHE_NULL;
-  offset = PBA = 0;
+  PBA = 0;
+  index = CACHE_NULL;
   valid_bit = false;
 }
 
@@ -252,8 +251,10 @@ int read_metadata_set(int set_id, std::shared_ptr<cache_metadata_set> md_set) {
 }
 
 int write_metadata_entry(std::shared_ptr<cache_metadata_entry> md_entry) {
-  auto offset = md_entry->offset;
+  uint32_t offset = md_entry->index;
   offset *= ssd_sector_size;
+  offset /= 4;
+  offset += ssd_sector_size * (superblock_length + md_entry->index/cache_associativity + 1);
   lseek(ssd_fd, offset, SEEK_SET);
   int ret = 0;
   ret = write(ssd_fd, reinterpret_cast<char*>(md_entry.get()), sizeof(cache_metadata_entry));
@@ -262,9 +263,11 @@ int write_metadata_entry(std::shared_ptr<cache_metadata_entry> md_entry) {
   return 0;
 }
 
-int read_metadata_entry(uint32_t _offset, std::shared_ptr<cache_metadata_entry> md_entry) {
-  auto offset = _offset;
+int read_metadata_entry(uint32_t index, std::shared_ptr<cache_metadata_entry> md_entry) {
+  auto offset = index;
   offset *= ssd_sector_size;
+  offset /= 4;
+  offset += ssd_sector_size * (superblock_length + index/cache_associativity + 1);
   lseek(ssd_fd, offset, SEEK_SET);
   int ret = 0;
   ret = read(ssd_fd, reinterpret_cast<char*>(md_entry.get()), sizeof(cache_metadata_entry));
