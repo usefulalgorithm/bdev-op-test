@@ -52,7 +52,7 @@ void cache_daemon::initialize() {
     while (cur != CACHE_NULL) {
       std::shared_ptr<cache_metadata_entry> entry(new cache_metadata_entry);
       read_metadata_entry(cur, entry);
-      auto idx = entry->index - superblock_length - i -1;
+      auto idx = entry->index;
       cur = entry->lru_next;
       entries[idx] = std::move(entry);
     }
@@ -60,16 +60,16 @@ void cache_daemon::initialize() {
 }
 
 void cache_daemon::print() {
-  debug("===== Superblock =====");
+  debug("==================================== Superblock ====================================");
   sb->print();
-  debug("===== Metadata sets =====");
+  debug("==================================== Metadata sets ====================================");
   for (size_t i = 0; i < sets.size(); i++) {
-    debug("----- set " + std::to_string(i) + " -----");
+    debug("----------------------------------- set " + std::to_string(i) + " -----------------------------------");
     sets[i]->print();
     for (size_t j = 0; j < cache_associativity; j++) {
       auto idx = j+cache_associativity*i;
       if (entries[idx] != nullptr) {
-        debug("..... entry " + std::to_string(idx) + " .....");
+        debug(".................................... entry " + std::to_string(idx) + " ....................................");
         entries[idx]->print();
       }
     }

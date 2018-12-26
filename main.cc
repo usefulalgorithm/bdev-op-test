@@ -234,12 +234,10 @@ int main(int argc, char* argv[]) {
           }
       }
       // update metadata here!
-      /*
       if (write_metadata_set(set_id, cache_set) < 0) {
         whine << "Cannot reset metadata set " << set_id << ": " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
       }
-      */
     }
     // we're just gonna do nothing
     else {

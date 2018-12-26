@@ -120,12 +120,12 @@ int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared
     lru_head = entry->index;
     entry->lru_next = cur_head->index;
     cur_head->lru_prev = entry->index;
-    //write_metadata_entry(cur_head);
+    write_metadata_entry(cur_head);
     lru_size++;
     entry->PBA = PBA_begin+pos*cache_obj_size;
     entry->valid_bit = true;
   }
-  //write_metadata_entry(entry);
+  write_metadata_entry(entry);
   auto idx = entry->index;
   daemon->entries[idx] = std::move(entry);
   return 0;
