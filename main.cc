@@ -197,6 +197,7 @@ int main(int argc, char* argv[]) {
       switch (operation) {
         case PUT:
           {
+            log << "PUT" << endl;
             // check if object exists
             if (!boost::filesystem::exists(object_path)) {
               whine << object_path << " does not exist" << endl;
@@ -212,18 +213,23 @@ int main(int argc, char* argv[]) {
               exit(EXIT_FAILURE);
             }
             auto idx = entry->index;
-            debug("inserting to daemon->cache[" + std::to_string(idx) + "]");
+            log << "inserting to daemon->entries[" << idx << "]" << endl;
             assert(idx < daemon->entries.size());
             break;
           }
         case GET:
           {
-            // TODO get data from disk
+            log << "GET" << endl;
+            int ret = cache_set->retrieve(daemon, entry);
+            if (ret) {
+              whine << "Failed to get " << object_path << endl;
+              exit(EXIT_FAILURE);
+            }
             break;
           }
         case EVICT:
           {
-            debug("EVICT");
+            log << "EVICT" << endl;
             break;
           }
         default:

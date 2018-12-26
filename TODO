@@ -1,2 +1,2 @@
 1. Implement put / get / evict operations
-2. How to get object? readline / basename / dirname / stuff like that?
+2. Figure out how to determine the next invalid position. Now the mechanism doesn't really work...

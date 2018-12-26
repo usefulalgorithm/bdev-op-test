@@ -95,8 +95,9 @@ void cache_metadata_set::print() {
 //         -1 on error
 int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared_ptr<cache_metadata_entry> entry) {
   size_t pos = 0;
+  uint32_t placeholder = 0;
   entry->index = set_id * cache_associativity;
-  if (lookup(daemon, entry, pos) > 0)
+  if (lookup(daemon, entry, pos, placeholder) > 0)
     return 1;
   debug("pos=" + std::to_string(pos));
   entry->index += pos; // XXX: ???
@@ -128,6 +129,7 @@ int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared
   write_metadata_entry(entry);
   auto idx = entry->index;
   daemon->entries[idx] = std::move(entry);
+  invalid_head = idx+1; // XXX: ???
   return 0;
 }
 
@@ -136,12 +138,13 @@ int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared
 //         -1 on error
 //
 // pos is the index in the linked list
-int cache_metadata_set::lookup(std::shared_ptr<cache_daemon> daemon, std::shared_ptr<cache_metadata_entry> entry, size_t& pos) {
+int cache_metadata_set::lookup(std::shared_ptr<cache_daemon> daemon,
+    std::shared_ptr<cache_metadata_entry> entry, size_t& pos, uint32_t& index) {
   int ret = 0;
   auto cur = lru_head;
   while (cur != CACHE_NULL) {
-    auto idx = cur;
-    auto cur_entry = daemon->entries[idx];
+    index = cur;
+    auto cur_entry = daemon->entries[index];
     if (cur_entry->pool_id == entry->pool_id
         && cur_entry->image_id == entry->image_id
         && cur_entry->object_id == entry->object_id)
@@ -150,6 +153,38 @@ int cache_metadata_set::lookup(std::shared_ptr<cache_daemon> daemon, std::shared
     cur = cur_entry->lru_next;
   }
   return ret;
+}
+
+// return 0 on success
+//        1 if not found
+int cache_metadata_set::retrieve(std::shared_ptr<cache_daemon> daemon, std::shared_ptr<cache_metadata_entry> entry) {
+  size_t pos = 0;
+  uint32_t index = CACHE_NULL;
+  if (lookup(daemon, entry, pos, index) == 0) // if not found, return
+    return 1;
+  if (index != lru_head) {
+    // daemon->entries[index] is our target
+    // first update its neighbors
+    auto lru_prev_i = daemon->entries[index]->lru_prev, lru_next_i = daemon->entries[index]->lru_next;
+    if (lru_prev_i != CACHE_NULL) {
+      daemon->entries[lru_prev_i]->lru_next = lru_next_i;
+      write_metadata_entry(daemon->entries[lru_prev_i]);
+    }
+    if (lru_next_i != CACHE_NULL) {
+      daemon->entries[lru_next_i]->lru_prev = lru_prev_i;
+      write_metadata_entry(daemon->entries[lru_next_i]);
+    }
+    if (index == lru_tail)
+      lru_tail = lru_prev_i;
+    // then update itself and the head
+    daemon->entries[lru_head]->lru_prev = index;
+    write_metadata_entry(daemon->entries[lru_head]);
+    daemon->entries[index]->lru_next = lru_head;
+    daemon->entries[index]->lru_prev = CACHE_NULL;
+    write_metadata_entry(daemon->entries[index]);
+    lru_head = index;
+  }
+  return 0;
 }
 
 int cache_metadata_set::evict(std::shared_ptr<cache_metadata_entry> entry) {
@@ -255,6 +290,7 @@ int write_metadata_entry(std::shared_ptr<cache_metadata_entry> md_entry) {
   offset *= ssd_sector_size;
   offset /= 4;
   offset += ssd_sector_size * (superblock_length + md_entry->index/cache_associativity + 1);
+  debug(offset);
   lseek(ssd_fd, offset, SEEK_SET);
   int ret = 0;
   ret = write(ssd_fd, reinterpret_cast<char*>(md_entry.get()), sizeof(cache_metadata_entry));
