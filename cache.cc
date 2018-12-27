@@ -96,14 +96,18 @@ void cache_metadata_set::print() {
 //         1 if object already in cache
 //         -1 on error
 int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared_ptr<cache_metadata_entry> entry) {
-  size_t pos = 0;
-  uint32_t placeholder = 0;
-  entry->index = set_id * cache_associativity;
+  uint32_t pos, placeholder;
+  pos = set_id*cache_associativity;
+  placeholder = 0;
   if (lookup(daemon, entry, pos, placeholder) > 0)
     return 1;
-  //debug("pos=" + std::to_string(pos));
-  entry->index += pos; // XXX: ???
-  //debug("entry->index=" + std::to_string(entry->index));
+  if (invalid_head == CACHE_NULL) {
+    // evict daemon->entries[invalid_head]
+    // FIXME
+    whine << "Cache is full!!!" << endl;
+    return -1;
+  }
+  entry->index = invalid_head;
   if (lru_head == CACHE_NULL) {
     debug("insert to empty lru");
     lru_head = entry->index;
@@ -116,8 +120,6 @@ int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared
   else {
     debug("insert to lru head");
     // TODO eviction
-    if (lru_size == cache_size) {
-    }
     // get lru head
     auto cur_head = daemon->entries[lru_head];
     lru_head = entry->index;
@@ -131,7 +133,11 @@ int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared
   write_metadata_entry(entry);
   auto idx = entry->index;
   daemon->entries[idx] = std::move(entry);
-  invalid_head = idx+1; // XXX: ???
+  // check if this set is full
+  if (lru_size == cache_size)
+    invalid_head = CACHE_NULL;
+  else
+    invalid_head = pos;
   return 0;
 }
 
@@ -139,9 +145,9 @@ int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared
 //         1 if found
 //         -1 on error
 //
-// pos is the index in the linked list
+// pos is the next invalid_head
 int cache_metadata_set::lookup(std::shared_ptr<cache_daemon> daemon,
-    std::shared_ptr<cache_metadata_entry> entry, size_t& pos, uint32_t& index) {
+    std::shared_ptr<cache_metadata_entry> entry, uint32_t& pos, uint32_t& index) {
   int ret = 0;
   auto cur = lru_head;
   while (cur != CACHE_NULL) {
@@ -151,16 +157,17 @@ int cache_metadata_set::lookup(std::shared_ptr<cache_daemon> daemon,
         && cur_entry->image_id == entry->image_id
         && cur_entry->object_id == entry->object_id)
       return 1;
-    pos++; // XXX: ???
+    pos = std::max(pos, index+1);
     cur = cur_entry->lru_next;
   }
+  pos++;
   return ret;
 }
 
 // return 0 on success
 //        1 if not found
 int cache_metadata_set::retrieve(std::shared_ptr<cache_daemon> daemon, std::shared_ptr<cache_metadata_entry>& entry) {
-  size_t pos = 0;
+  uint32_t pos = 0;
   uint32_t index = CACHE_NULL;
   if (lookup(daemon, entry, pos, index) == 0) // if not found, return
     return 1;

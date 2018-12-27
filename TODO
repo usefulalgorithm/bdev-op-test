@@ -1,2 +1,3 @@
-1. Implement put / get / evict operations
-2. Figure out how to determine the next invalid position. Now the mechanism doesn't really work...
+1. Implement eviction
+2. Do tests
+3. Merge into the Ceph immutable object cache infrastructure

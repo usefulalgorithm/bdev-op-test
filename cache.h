@@ -73,7 +73,7 @@ struct cache_metadata_set { // size = 1 sector
   void print();
 
   int insert(std::shared_ptr<cache_daemon>, std::shared_ptr<cache_metadata_entry>);
-  int lookup(std::shared_ptr<cache_daemon>, std::shared_ptr<cache_metadata_entry>, size_t&, uint32_t&);
+  int lookup(std::shared_ptr<cache_daemon>, std::shared_ptr<cache_metadata_entry>, uint32_t&, uint32_t&);
   int retrieve(std::shared_ptr<cache_daemon>, std::shared_ptr<cache_metadata_entry>&);
   int evict(std::shared_ptr<cache_metadata_entry>);
 }; // __attribute__((packed));
