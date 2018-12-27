@@ -84,6 +84,7 @@ void cache_metadata_set::print() {
     << ", lru_head=" << ::check_if_null(lru_head)
     << ", lru_tail=" << ::check_if_null(lru_tail)
     << ", lru_size=" << lru_size
+    << ", cache_size=" << cache_size
     << ", invalid_head=" << ::check_if_null(invalid_head)
     << ", PBA_begin=" << std::hex << PBA_begin << "B"
     << ", PBA_end=" << PBA_end << "B"
@@ -101,12 +102,9 @@ int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared
   placeholder = 0;
   if (lookup(daemon, entry, pos, placeholder) > 0)
     return 1;
-  if (invalid_head == CACHE_NULL) {
-    // evict daemon->entries[invalid_head]
-    // FIXME
-    whine << "Cache is full!!!" << endl;
-    return -1;
-  }
+  if (invalid_head == CACHE_NULL) // cache is full, do eviction here!
+    evict(daemon);
+
   entry->index = invalid_head;
   if (lru_head == CACHE_NULL) {
     debug("insert to empty lru");
@@ -119,7 +117,6 @@ int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared
   }
   else {
     debug("insert to lru head");
-    // TODO eviction
     // get lru head
     auto cur_head = daemon->entries[lru_head];
     lru_head = entry->index;
@@ -197,7 +194,14 @@ int cache_metadata_set::retrieve(std::shared_ptr<cache_daemon> daemon, std::shar
   return 0;
 }
 
-int cache_metadata_set::evict(std::shared_ptr<cache_metadata_entry> entry) {
+int cache_metadata_set::evict(std::shared_ptr<cache_daemon> daemon) {
+  auto entry = daemon->entries[lru_tail];
+  entry->print();
+  invalid_head = lru_tail;
+  lru_tail = entry->lru_prev;
+  daemon->entries[lru_tail]->lru_next = CACHE_NULL;
+  lru_size --;
+  write_metadata_entry(daemon->entries[lru_tail]);
   return 0;
 }
 
@@ -296,6 +300,7 @@ int read_metadata_set(int set_id, std::shared_ptr<cache_metadata_set> md_set) {
 }
 
 int write_metadata_entry(std::shared_ptr<cache_metadata_entry> md_entry) {
+  md_entry->print();
   uint32_t offset = md_entry->index;
   offset *= ssd_sector_size;
   offset /= 4;

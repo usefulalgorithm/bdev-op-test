@@ -1,3 +1,3 @@
-1. Implement eviction
+1. Actually put data onto disk
 2. Do tests
 3. Merge into the Ceph immutable object cache infrastructure

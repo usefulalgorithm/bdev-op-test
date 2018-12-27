@@ -216,7 +216,7 @@ int main(int argc, char* argv[]) {
       log << "no op" << endl;
     }
     // for debugging
-    //daemon->print();
+    daemon->print();
   }
 
   if (close(ssd_fd) < 0) {

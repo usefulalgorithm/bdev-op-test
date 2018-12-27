@@ -75,7 +75,7 @@ struct cache_metadata_set { // size = 1 sector
   int insert(std::shared_ptr<cache_daemon>, std::shared_ptr<cache_metadata_entry>);
   int lookup(std::shared_ptr<cache_daemon>, std::shared_ptr<cache_metadata_entry>, uint32_t&, uint32_t&);
   int retrieve(std::shared_ptr<cache_daemon>, std::shared_ptr<cache_metadata_entry>&);
-  int evict(std::shared_ptr<cache_metadata_entry>);
+  int evict(std::shared_ptr<cache_daemon>);
 }; // __attribute__((packed));
 
 int write_superblock(char* buf, size_t len);
