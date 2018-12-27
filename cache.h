@@ -66,6 +66,7 @@ struct cache_metadata_set { // size = 1 sector
   uint32_t lru_head, lru_tail; // index of entries at LRU's head / tail
   uint32_t invalid_head; // index of next invalid block. 0 if doesn't exist
   uint64_t lru_size; // how many entries are in this set
+  uint64_t cache_size; // how many entries can this set store
   uint64_t PBA_begin, PBA_end; // boundaries of PBAs of data managed by this set, in bytes
 
   cache_metadata_set(int);
@@ -81,7 +82,7 @@ int write_superblock(char* buf, size_t len);
 int read_superblock(char* buf);
 
 int write_metadata_set(int set_id, std::shared_ptr<cache_metadata_set> md_set);
-int reset_metadata_entries(uint32_t offset);
+int reset_metadata_entries(uint32_t offset, std::shared_ptr<cache_metadata_set> md_set);
 int read_metadata_set(int set_id, std::shared_ptr<cache_metadata_set> md_set);
 
 int write_metadata_entry(std::shared_ptr<cache_metadata_entry> md_entry);

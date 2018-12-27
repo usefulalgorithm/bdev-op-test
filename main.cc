@@ -149,6 +149,11 @@ int main(int argc, char* argv[]) {
       boost::filesystem::path object_path(object_name);
       std::vector<string> v;
       boost::split(v, object_path.filename().string(), [] (char c) { return c == '.'; });
+      // ensure object name contains 3 parts
+      if (v.size() != 3) {
+        whine << "Invalid object name" << endl;
+        exit(EXIT_FAILURE);
+      }
 
       std::shared_ptr<cache_metadata_entry> entry(new cache_metadata_entry);
       entry->initialize(v);

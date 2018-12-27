@@ -53,6 +53,7 @@ cache_metadata_set::cache_metadata_set(int _set_id) {
   set_id = _set_id;
   lru_head = CACHE_NULL, lru_tail = CACHE_NULL; // cache_metadata_entry.offset
   lru_size = 0;
+  cache_size = (cache_entries / cache_associativity - set_id) ? cache_associativity : cache_entries % cache_associativity;
   invalid_head = cache_associativity*(set_id);
   auto _PBA_begin = 1 + metadata_length + (_set_id) * cache_obj_size * cache_associativity;
   PBA_begin = _PBA_begin;
@@ -61,6 +62,7 @@ cache_metadata_set::cache_metadata_set(int _set_id) {
   PBA_end *= ssd_sector_size;
   checksum = 0;
   unclean = false;
+  //debug("cache_size=" + std::to_string(cache_size));
 }
 
 void superblock::get_attributes() {
@@ -99,9 +101,9 @@ int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared
   entry->index = set_id * cache_associativity;
   if (lookup(daemon, entry, pos, placeholder) > 0)
     return 1;
-  debug("pos=" + std::to_string(pos));
+  //debug("pos=" + std::to_string(pos));
   entry->index += pos; // XXX: ???
-  debug("entry->index=" + std::to_string(entry->index));
+  //debug("entry->index=" + std::to_string(entry->index));
   if (lru_head == CACHE_NULL) {
     debug("insert to empty lru");
     lru_head = entry->index;
@@ -114,7 +116,7 @@ int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared
   else {
     debug("insert to lru head");
     // TODO eviction
-    if (lru_size == cache_associativity) {
+    if (lru_size == cache_size) {
     }
     // get lru head
     auto cur_head = daemon->entries[lru_head];
@@ -238,7 +240,7 @@ int read_superblock(char* buf) {
 int write_metadata_set(int set_id, std::shared_ptr<cache_metadata_set> md_set) {
   // get metadata set offset
   //
-  // cache_associativity = number of entries in a set
+  // cache_associativity = number of entries in previous sets
   // length of one entry = 1/4 sector
   // length of one metadata set info = 1 sector
   //
@@ -252,10 +254,9 @@ int write_metadata_set(int set_id, std::shared_ptr<cache_metadata_set> md_set) {
   int ret = 0;
   lseek(ssd_fd, offset, SEEK_SET);
   if (reset) {
-    auto set = new cache_metadata_set(set_id);
-    write(ssd_fd, (char*)set, sizeof(cache_metadata_set));
-    ret = reset_metadata_entries(offset+ 1*ssd_sector_size);
-    delete set;
+    std::shared_ptr<cache_metadata_set>set(new cache_metadata_set(set_id));
+    write(ssd_fd, reinterpret_cast<char*>(set.get()), sizeof(cache_metadata_set));
+    ret = reset_metadata_entries(offset+ 1*ssd_sector_size, set);
   }
   else {
     // TODO partially update metadata
@@ -264,10 +265,11 @@ int write_metadata_set(int set_id, std::shared_ptr<cache_metadata_set> md_set) {
   return ret;
 }
 
-int reset_metadata_entries(uint32_t start) {
+int reset_metadata_entries(uint32_t start, std::shared_ptr<cache_metadata_set> md_set) {
   if (reset) {
     lseek(ssd_fd, start, SEEK_SET);
-    auto len = ssd_sector_size * cache_associativity/4; // in bytes
+    auto len = ssd_sector_size * md_set->cache_size/4; // in bytes
+    //debug("len=" + std::to_string(len));
     char buf[len];
     std::fill(buf, buf+len, '\0');
     return write(ssd_fd, buf, len);
