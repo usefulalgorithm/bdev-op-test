@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
   int opt;
   uint8_t operation = NOOP;
   string object_name;
-  while ((opt = getopt(argc, argv, "s:GMKn:ra:Wh?p:g:e:")) != -1) {
+  while ((opt = getopt(argc, argv, "s:GMKn:ra:Wh?p:g:")) != -1) {
     switch (opt) {
       case 's':
         ssd_devname = optarg;
@@ -56,14 +56,6 @@ int main(int argc, char* argv[]) {
           usage(pname);
         }
         operation = GET;
-        object_name = optarg;
-        break;
-      case 'e':
-        if (operation != NOOP) {
-          cerr << "Can only do one operation at a time" << endl;
-          usage(pname);
-        }
-        operation = EVICT;
         object_name = optarg;
         break;
       case 'W':
@@ -199,11 +191,6 @@ int main(int argc, char* argv[]) {
               exit(EXIT_FAILURE);
             }
             // TODO: now, entry is the result of our query!
-            break;
-          }
-        case EVICT:
-          {
-            log << "EVICT" << endl;
             break;
           }
         default:

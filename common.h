@@ -58,7 +58,6 @@ using std::endl;
 #define NOOP          0
 #define PUT           1
 #define GET           2
-#define EVICT         3
 
 #define SEED          0xbabeface
 #define CACHE_NULL    0xFFFFFFFF
