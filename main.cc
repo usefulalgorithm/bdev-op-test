@@ -164,6 +164,10 @@ int main(int argc, char* argv[]) {
       auto cache_set = daemon->sets[set_id];
       // cache_set->print();
 
+      // initialize buffer
+      auto len = ssd_sector_size * cache_obj_size;
+      std::shared_ptr<char> buffer(new char[len], std::default_delete<char[]>());
+
       switch (operation) {
         case PUT:
           {
@@ -173,7 +177,15 @@ int main(int argc, char* argv[]) {
               whine << object_path << " does not exist" << endl;
               exit(EXIT_FAILURE);
             }
-            int ret = cache_set->insert(daemon, entry);
+            // TODO: read object contents
+            std::ifstream is (object_name, std::ifstream::binary);
+            is.read(buffer.get(), len);
+            if (!is) {
+              whine << "Cannot read " << object_name << endl;
+              exit(EXIT_FAILURE);
+            }
+
+            int ret = cache_set->insert(daemon, entry, buffer, len);
             if (ret < 0) {
               whine << "Failed to insert " << object_path << endl;
               exit(EXIT_FAILURE);

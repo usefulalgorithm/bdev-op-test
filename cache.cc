@@ -96,7 +96,8 @@ void cache_metadata_set::print() {
 // returns 0 on success
 //         1 if object already in cache
 //         -1 on error
-int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared_ptr<cache_metadata_entry> entry) {
+int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon,
+    std::shared_ptr<cache_metadata_entry> entry, std::shared_ptr<char> buffer, uint32_t len) {
   uint32_t pos, placeholder;
   pos = set_id*cache_associativity;
   placeholder = 0;
@@ -124,10 +125,16 @@ int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared
     cur_head->lru_prev = entry->index;
     write_metadata_entry(cur_head);
     lru_size++;
-    entry->PBA = PBA_begin+(entry->index%cache_size)*cache_obj_size*ssd_sector_size;
+    entry->PBA = PBA_begin+(entry->index%cache_size)*len;
     entry->valid_bit = true;
   }
-  write_metadata_entry(entry);
+  if (write_metadata_entry(entry) < 0)
+    return -1;
+
+  // write data to disk
+  if (write_entry_data(entry, buffer, len) < 0)
+    return -1;
+
   auto idx = entry->index;
   daemon->entries[idx] = std::move(entry);
   // check if this set is full
@@ -319,6 +326,15 @@ int read_metadata_entry(uint32_t index, std::shared_ptr<cache_metadata_entry> md
   lseek(ssd_fd, offset, SEEK_SET);
   int ret = 0;
   ret = read(ssd_fd, reinterpret_cast<char*>(md_entry.get()), sizeof(cache_metadata_entry));
+  if (ret < 0)
+    return ret;
+  return 0;
+}
+
+int write_entry_data(std::shared_ptr<cache_metadata_entry> entry, std::shared_ptr<char> buffer, uint32_t length) {
+  lseek(ssd_fd, entry->PBA, SEEK_SET);
+  int ret = 0;
+  ret = write(ssd_fd, buffer.get(), length);
   if (ret < 0)
     return ret;
   return 0;
