@@ -3,8 +3,9 @@ INCLUDE = ./include
 CCFLAGS = -g -O3 -std=c++11
 LDFLAGS += -Wl,-rpath=./lib -L./lib
 LIBS = -lboost_filesystem
-DEPS = SpookyV2.h common.h utils.h cache.h daemon.h
-OBJ = SpookyV2.o common.o utils.o cache.o daemon.o main.o
+DEPS = $(wildcard src/*.h)
+SRC = $(wildcard src/*.cc)
+OBJ = $(SRC:.cc=.o)
 TARGET = bdev-op-test
 
 .PHONY: all
@@ -25,4 +26,4 @@ $(TARGET): $(OBJ)
 .PHONY: clean
 
 clean:
-	@rm -f $(TARGET) *.o
+	@rm -f $(TARGET) $(OBJ)
