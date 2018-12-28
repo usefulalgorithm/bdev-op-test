@@ -17,11 +17,20 @@ SpookyHash is chosen for its lightweight implementation and nice performance.
 
 ## Install
 
+
+_Tip: build with `debug` for much more illustrative outputs._
+
 ```
 $ ./check_boost.sh && make
 ```
 
 ## Usage
+
+__IMPORTANT: Remember to change the SSD location!!!__
+
+In my use case, each cache object has a size of 4 MB. This value is defined as a 
+fixed static variable in this project, but it shouldn't be too hard for you to change
+this value. ;)
 
 ```
 Usage: ./bdev-op-test [-s SSD_LOCATION] [-K | -M | -G] [-n CACHE_ENTRIES] [-a ASSOCIATIVITY] [-r] [-W] [-h | -?] <-p OBJ | -g OBJ>
