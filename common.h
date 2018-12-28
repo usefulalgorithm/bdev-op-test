@@ -99,6 +99,7 @@ extern uint64_t       data_length;
 extern bool reset;
 extern bool wipe_superblock;
 
-// data structures
+// cache data storage
 
+static const boost::filesystem::path cache_storage_dir("from_cache");
 #endif

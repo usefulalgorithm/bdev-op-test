@@ -131,6 +131,11 @@ int main(int argc, char* argv[]) {
         exit(EXIT_FAILURE);
       }
     }
+
+    // reset cache storage directory
+    if (boost::filesystem::exists(cache_storage_dir))
+      boost::filesystem::remove_all(cache_storage_dir);
+    boost::filesystem::create_directory(cache_storage_dir);
   }
 
   else {
@@ -207,7 +212,16 @@ int main(int argc, char* argv[]) {
               whine << "Failed to get " << object_path << endl;
               exit(EXIT_FAILURE);
             }
-            // TODO: now, entry is the result of our query!
+            // now, entry is the result of our query!
+            read_entry_data(entry, buffer, len);
+
+            // TODO: What do we do with our data...?
+            // For now, just write it to a file
+            auto prefix = entry->pool_id + entry->image_id;
+            auto name = std::to_string(prefix) + "." + std::to_string(entry->object_id);
+            debug("name=" + name);
+            //std::ofstream(std::ofstream::binary);
+
             break;
           }
         default:

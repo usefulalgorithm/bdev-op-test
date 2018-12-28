@@ -339,3 +339,12 @@ int write_entry_data(std::shared_ptr<cache_metadata_entry> entry, std::shared_pt
     return ret;
   return 0;
 }
+
+int read_entry_data(std::shared_ptr<cache_metadata_entry> entry, std::shared_ptr<char> buffer, uint32_t length) {
+  lseek(ssd_fd, entry->PBA, SEEK_SET);
+  int ret = 0;
+  ret = read(ssd_fd, buffer.get(), length);
+  if (ret < 0)
+    return ret;
+  return 0;
+}

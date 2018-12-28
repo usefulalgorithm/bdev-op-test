@@ -89,5 +89,6 @@ uint32_t get_metadata_entry_offset(std::shared_ptr<cache_metadata_entry> md_entr
 int read_metadata_entry(uint32_t index, std::shared_ptr<cache_metadata_entry> md_entry);
 
 int write_entry_data(std::shared_ptr<cache_metadata_entry> entry, std::shared_ptr<char> buffer, uint32_t length);
+int read_entry_data(std::shared_ptr<cache_metadata_entry> entry, std::shared_ptr<char> buffer, uint32_t length);
 
 #endif

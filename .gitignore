@@ -6,3 +6,4 @@ rbd-test-data/
 *.o
 bdev-op-test
 cscope*
+from_cache/
