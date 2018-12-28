@@ -57,7 +57,7 @@ cache_metadata_set::cache_metadata_set(int _set_id) {
   invalid_head = cache_associativity*(set_id);
   auto _PBA_begin = 1 + metadata_length + (_set_id) * cache_obj_size * cache_associativity;
   PBA_begin = _PBA_begin;
-  PBA_end = _PBA_begin + cache_obj_size * cache_associativity;
+  PBA_end = _PBA_begin + cache_obj_size * cache_size;
   PBA_begin *= ssd_sector_size;
   PBA_end *= ssd_sector_size;
   checksum = 0;
@@ -86,9 +86,9 @@ void cache_metadata_set::print() {
     << ", lru_size=" << lru_size
     << ", cache_size=" << cache_size
     << ", invalid_head=" << ::check_if_null(invalid_head)
-    << ", PBA_begin=" << std::hex << PBA_begin << "B"
+    << ", PBA_begin=" << PBA_begin << "B"
     << ", PBA_end=" << PBA_end << "B"
-    << ", checksum=" << std::dec << checksum
+    << ", checksum=" << checksum
     << ", unclean=" << unclean << endl;
   debug(ss.str());
 }
@@ -124,7 +124,7 @@ int cache_metadata_set::insert(std::shared_ptr<cache_daemon> daemon, std::shared
     cur_head->lru_prev = entry->index;
     write_metadata_entry(cur_head);
     lru_size++;
-    entry->PBA = PBA_begin+pos*cache_obj_size;
+    entry->PBA = PBA_begin+(entry->index%cache_size)*cache_obj_size*ssd_sector_size;
     entry->valid_bit = true;
   }
   write_metadata_entry(entry);
@@ -212,8 +212,8 @@ void cache_metadata_entry::print() {
     << ", object_id=" << object_id
     << ", index=" << index
     << ", valid_bit=" << (valid_bit ? "VALID" : "INVALID")
-    << ", PBA=" << std::hex << PBA << "B"
-    << ", lru_prev=" << std::dec << check_if_null(lru_prev)
+    << ", PBA=" << PBA << "B"
+    << ", lru_prev=" << check_if_null(lru_prev)
     << ", lru_next=" << check_if_null(lru_next)
     << ", prev=" << check_if_null(prev)
     << ", next=" << check_if_null(next) << endl;
