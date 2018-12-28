@@ -183,9 +183,9 @@ int main(int argc, char* argv[]) {
               exit(EXIT_FAILURE);
             }
             // TODO: read object contents
-            std::ifstream is (object_name, std::ifstream::binary);
-            is.read(buffer.get(), len);
-            if (!is) {
+            std::ifstream ifs (object_name, std::ifstream::binary);
+            ifs.read(buffer.get(), len);
+            if (!ifs) {
               whine << "Cannot read " << object_name << endl;
               exit(EXIT_FAILURE);
             }
@@ -218,9 +218,10 @@ int main(int argc, char* argv[]) {
             // TODO: What do we do with our data...?
             // For now, just write it to a file
             auto prefix = entry->pool_id + entry->image_id;
-            auto name = std::to_string(prefix) + "." + std::to_string(entry->object_id);
+            auto name = cache_storage_dir.string() + "/" + std::to_string(prefix) + "." + std::to_string(entry->object_id);
             debug("name=" + name);
-            //std::ofstream(std::ofstream::binary);
+            std::ofstream ofs(name, std::ofstream::binary);
+            ofs.write(buffer.get(), len);
 
             break;
           }
