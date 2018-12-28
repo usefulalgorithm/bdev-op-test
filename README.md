@@ -18,7 +18,7 @@ SpookyHash is chosen for its lightweight implementation and nice performance.
 ## Install
 
 
-_Tip: build with `debug` for much more illustrative outputs._
+_Tip: build with `make debug` for much more illustrative outputs._
 
 ```
 $ ./check_boost.sh && make
