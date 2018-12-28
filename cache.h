@@ -52,7 +52,6 @@ struct cache_metadata_entry { // size = 1/4 sector
   hash_t object_id;
   uint32_t index;
   uint32_t lru_prev, lru_next; // these denote neighboring LRU entries
-  uint32_t prev, next; // these denote neighboring available entries in set
   uint64_t PBA; // physical block address of data chunk
 
   void print();

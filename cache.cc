@@ -214,9 +214,7 @@ void cache_metadata_entry::print() {
     << ", valid_bit=" << (valid_bit ? "VALID" : "INVALID")
     << ", PBA=" << PBA << "B"
     << ", lru_prev=" << check_if_null(lru_prev)
-    << ", lru_next=" << check_if_null(lru_next)
-    << ", prev=" << check_if_null(prev)
-    << ", next=" << check_if_null(next) << endl;
+    << ", lru_next=" << check_if_null(lru_next) << endl;
   debug(ss.str());
 }
 
@@ -225,7 +223,7 @@ void cache_metadata_entry::initialize(std::vector<string> v) {
   pool_id = SpookyHash::Hash32(v[0].c_str(), v[0].length(), SEED);
   image_id = SpookyHash::Hash32(v[1].c_str(), v[1].length(), SEED);
   object_id = std::stoul(v[2]);
-  lru_prev = lru_next = prev = next = CACHE_NULL;
+  lru_prev = lru_next = CACHE_NULL;
   PBA = 0;
   index = CACHE_NULL;
   valid_bit = false;
