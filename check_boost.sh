@@ -40,7 +40,7 @@ else
       echo "yes"
     else
       echo "no"
-      wget -P $BOOST_PATH https://dl.bintray.com/boostorg/release/$BOOST_VERSION_NUM/source/"$BOOST_VERSION_STR".tar.bz2
+      wget -P $BOOST_PATH https://dl.bintray.com/boostorg/release/$BOOST_VERSION_NUM/source/boost_"$BOOST_VERSION_STR".tar.bz2
     fi
 
     echo -n "Checking if SHA256 of boost tarball matches... "
