@@ -1,4 +1,4 @@
-# bdev-op-test
+# bdev-op-test [![Build Status](https://travis-ci.com/usefulalgorithm/bdev-op-test.svg?branch=master)](https://travis-ci.com/usefulalgorithm/bdev-op-test)
 
 Author: [Andy Lii](mailto:usefulalgorithm@gmail.com)
 
